@@ -118,7 +118,7 @@ func (c *Context) Param(key string) string {
 
 // Redirect :
 func (c *Context) Redirect(uri string, statusCode ...int) error {
-	code := http.StatusMovedPermanently
+	code := fasthttp.StatusMovedPermanently
 	if len(statusCode) > 0 {
 		code = statusCode[0]
 	}
@@ -141,7 +141,7 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 // Render :
 func (c *Context) Render(cb func() []byte) error {
 	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
-	c.RequestCtx.Response.Header.SetStatusCode(http.StatusOK)
+	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusOK)
 	c.Write(cb())
 	return nil
 }
