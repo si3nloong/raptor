@@ -138,7 +138,9 @@ func (r *Response) Paginate(p Paginator, data interface{}) error {
 func (r *Response) compileError(statusCode int, code string, err error) error {
 	e := new(errorClaim)
 	e.Error.Code = code
-	e.Error.Debug = err.Error()
+	if err != nil {
+		e.Error.Debug = err.Error()
+	}
 	return r.compileResponse(e, statusCode)
 }
 
@@ -175,6 +177,14 @@ func (r *Response) Gone(code string, err error) error {
 // ExpectationFailed :
 func (r *Response) ExpectationFailed(code string, err error) error {
 	return r.compileError(fasthttp.StatusExpectationFailed, code, err)
+}
+
+// ValidationError :
+func (r *Response) ValidationError(code string, message interface{}) error {
+	e := new(errorClaim)
+	e.Error.Code = code
+	e.Error.Description = message
+	return r.compileResponse(e, fasthttp.StatusUnprocessableEntity)
 }
 
 // InternalServerError :

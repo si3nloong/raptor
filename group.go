@@ -1,10 +1,23 @@
 package raptor
 
+import (
+	"fmt"
+)
+
 // Group :
 type Group struct {
 	prefix      string
 	middlewares []MiddlewareFunc
 	router      *Router
+}
+
+// Group :
+func (g *Group) Group(prefix string, middleware ...MiddlewareFunc) *Group {
+	return &Group{
+		prefix:      fmt.Sprintf("%s%s", g.prefix, prefix),
+		middlewares: append(g.middlewares, middleware...),
+		router:      g.router,
+	}
 }
 
 func (g *Group) addRoute(method string, path string, h HandlerFunc, middleware ...MiddlewareFunc) *Group {
@@ -15,6 +28,7 @@ func (g *Group) addRoute(method string, path string, h HandlerFunc, middleware .
 	m := make([]MiddlewareFunc, 0, len(g.middlewares)+len(middleware))
 	m = append(m, g.middlewares...)
 	m = append(m, middleware...)
+	g.router.addRoute(method, fullPath, h, m...)
 	return g
 }
 

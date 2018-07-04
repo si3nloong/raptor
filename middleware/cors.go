@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/si3nloong/raptor"
@@ -9,6 +10,7 @@ import (
 
 // CORSConfig :
 type CORSConfig struct {
+	Skipper          Skipper
 	AllowOrigins     []string `yaml:"allow_origins"`
 	AllowMethods     []string `yaml:"allow_methods"`
 	AllowHeaders     []string `yaml:"allow_headers"`
@@ -20,6 +22,7 @@ type CORSConfig struct {
 var (
 	// DefaultCORSConfig is the default CORS middleware config.
 	DefaultCORSConfig = CORSConfig{
+		Skipper:      DefaultSkipper,
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{raptor.HEAD, raptor.GET, raptor.POST, raptor.PUT, raptor.PATCH, raptor.DELETE},
 		AllowHeaders: []string{raptor.HeaderOrigin, raptor.HeaderAccept, raptor.HeaderContentType},
@@ -31,6 +34,15 @@ func CORS(config ...CORSConfig) raptor.MiddlewareFunc {
 	c := DefaultCORSConfig
 	if len(config) > 0 {
 		c = config[0]
+	}
+	if c.Skipper == nil {
+		c.Skipper = DefaultSkipper
+	}
+	if c.AllowHeaders != nil && len(c.AllowHeaders) == 0 {
+		c.AllowHeaders = DefaultCORSConfig.AllowHeaders
+	}
+	if c.AllowMethods != nil && len(c.AllowMethods) == 0 {
+		c.AllowMethods = DefaultCORSConfig.AllowMethods
 	}
 	return corsWithConfig(c)
 }
@@ -46,7 +58,12 @@ func corsWithConfig(config CORSConfig) raptor.MiddlewareFunc {
 
 	return func(next raptor.HandlerFunc) raptor.HandlerFunc {
 		return func(ctx *raptor.Context) error {
+			if config.Skipper != nil && config.Skipper(ctx) {
+				return next(ctx)
+			}
+
 			origin := string(ctx.Request.Header.Peek(raptor.HeaderOrigin))
+			log.Println("Origin :", origin)
 			if _, isOk := allowOrigins[origin]; !isOk && !allowOrigins["*"] {
 				origin = ""
 			}
