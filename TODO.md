@@ -1,3 +1,1 @@
-- func `New()`
-- middleware `CORS`
-- middleware
+- Custom Error struct
