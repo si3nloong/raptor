@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/si3nloong/raptor"
@@ -63,7 +62,6 @@ func corsWithConfig(config CORSConfig) raptor.MiddlewareFunc {
 			}
 
 			origin := string(ctx.Request.Header.Peek(raptor.HeaderOrigin))
-			log.Println("Origin :", origin)
 			if _, isOk := allowOrigins[origin]; !isOk && !allowOrigins["*"] {
 				origin = ""
 			}

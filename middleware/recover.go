@@ -9,6 +9,7 @@ import (
 
 // RecoverConfig :
 type RecoverConfig struct {
+	Skipper Skipper
 }
 
 // Recover :
