@@ -65,7 +65,7 @@ func (r *Router) Static(prefix, path string) *Router {
 func (r *Router) Group(path string, middleware ...MiddlewareFunc) *Group {
 	g := new(Group)
 	g.prefix = path
-	g.middlewares = middleware
+	g.middlewares = append(g.middlewares, middleware...)
 	g.router = r
 	return g
 }
