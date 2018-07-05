@@ -139,9 +139,9 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 }
 
 // Render :
-func (c *Context) Render(cb func() []byte) error {
+func (c *Context) Render(b []byte) error {
 	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
 	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusOK)
-	c.Write(cb())
+	c.Write(b)
 	return nil
 }
