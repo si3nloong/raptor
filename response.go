@@ -50,6 +50,17 @@ func (r *Response) SetStatusCode(statusCode int) *Response {
 	return r
 }
 
+// Blob :
+func (r *Response) Blob(contentType string, b []byte, statusCode ...int) error {
+	r.Response.Header.Set(HeaderContentType, contentType)
+	r.SetStatusCode(fasthttp.StatusOK)
+	if len(statusCode) > 0 {
+		r.SetStatusCode(statusCode[0])
+	}
+	r.Write(b)
+	return nil
+}
+
 // XML :
 func (r *Response) XML(data interface{}, statusCode ...int) error {
 	r.SetStatusCode(fasthttp.StatusOK)
