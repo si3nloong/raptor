@@ -25,6 +25,7 @@ func init() {
 // Raptor :
 type Raptor struct {
 	*Router
+	HTTPErrorHandler func(err error, c *Context)
 }
 
 // HandlerFunc :
@@ -33,10 +34,25 @@ type HandlerFunc func(*Context) error
 // MiddlewareFunc :
 type MiddlewareFunc func(HandlerFunc) HandlerFunc
 
+// APIError :
+type APIError struct {
+}
+
+func (e APIError) Error() string {
+	return ""
+}
+
+func defaultErrorHandler(err error, c *Context) {
+	switch err.(type) {
+	case APIError:
+	}
+}
+
 // New :
 func New() *Raptor {
 	return &Raptor{
-		Router: NewRouter(),
+		Router:           NewRouter(),
+		HTTPErrorHandler: defaultErrorHandler,
 	}
 }
 
