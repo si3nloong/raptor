@@ -52,6 +52,9 @@ type HandlerFunc func(*Context) error
 // MiddlewareFunc :
 type MiddlewareFunc func(HandlerFunc) HandlerFunc
 
+// Map :
+type Map map[string]interface{}
+
 // New :
 func New() *Raptor {
 	r := &Raptor{
