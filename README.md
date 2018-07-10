@@ -6,7 +6,7 @@ Inspired by Laravel and Iris
 
 The only requirement is the Go Programming Language
 
-```go
+```bash
 $ go get -u github.com/si3nloong/raptor
 ```
 
@@ -95,10 +95,9 @@ func main() {
     if err := c.Bind(&i); err != nil {
       return c.Response().BadRequest(c.NewAPIError(err))
     }
-
     if message, err := c.Validate(&i); err != nil {
       return c.Response().UnprocessableEntity(c.NewAPIError(err, "", message))
-    }
+	}
 
 	return c.SuccessString("application/json", `{"message":"hello world"}`)
   })
