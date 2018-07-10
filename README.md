@@ -45,7 +45,7 @@ func main() {
         return c.SuccessString("application/json", `{"message":"hello world"}`)
     })
 
-    hosts["api.domain.com"] = api.Handler()
+	hosts["api.domain.com"] = api.Handler()
     hosts["open.domain.com"] = open.Handler()
 
 	r := raptor.New()
@@ -57,7 +57,7 @@ func main() {
 
 ```go
     api := raptor.New()
-    api.GET("/", func(c *raptor.Context) error {
+	api.GET("/", func(c *raptor.Context) error {
 		var i struct {
 			Name string `json:"name" xml:"name" query:"name"`
 		}
@@ -66,18 +66,33 @@ func main() {
 			return c.Response().BadRequest(c.NewAPIError(err))
 		}
 
-        return c.SuccessString("application/json", `{"message":"hello world"}`)
+		return c.SuccessString("application/json", `{"message":"hello world"}`)
 	})
 	api.Start(":8080")
 ```
 
 ## Validation
 
+```go
+    api := raptor.New()
+	api.GET("/", func(c *raptor.Context) error {
+		var i struct {
+			Name string `json:"name" xml:"name" query:"name"`
+		}
+
+		if err := c.Bind(&i); err != nil {
+			return c.Response().BadRequest(c.NewAPIError(err))
+		}
+
+		if message, err := c.Validate(&i); err != nil {
+			return c.Response().UnprocessableEntity(c.NewAPIError(err, "", message))
+		}
+
+		return c.SuccessString("application/json", `{"message":"hello world"}`)
+	})
+	api.Start(":8080")
+```
+
 ## Error Handling
 
 ## Custom Error
-
-packages we use :
-
-- github.com/valyala/fasthttp
-- github.com/buaazp/fasthttprouter
