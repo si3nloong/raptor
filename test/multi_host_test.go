@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"log"
 	"testing"
 
@@ -20,7 +21,7 @@ func (hs host) HostRouting(ctx *raptor.Context) error {
 		return cb(ctx)
 	}
 
-	return ctx.Response().Forbidden("", nil)
+	return ctx.Response().Forbidden(fmt.Errorf("not able to access"))
 }
 
 func TestMultiHost(t *testing.T) {
