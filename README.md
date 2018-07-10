@@ -1,3 +1,15 @@
+# Raptor Web Framework
+
+Inspired by Laravel and Iris
+
+## Installation
+
+The only requirement is the Go Programming Language
+
+```go
+$ go get -u github.com/si3nloong/raptor
+```
+
 ## Quick Start
 
 ```go
@@ -96,3 +108,5 @@ func main() {
 ## Error Handling
 
 ## Custom Error
+
+[MIT License](https://github.com/si3nloong/raptor/blob/master/LICENSE)
