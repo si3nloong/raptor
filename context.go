@@ -55,7 +55,7 @@ func (c *Context) Bind(dst interface{}) error {
 	}
 
 	switch string(c.Request.Header.Peek(HeaderContentType)) {
-	case MIMEApplicationForm:
+	case MIMEApplicationForm, MIMEMultipartForm:
 		if err := form.DecodeString(&dst, string(c.Request.Body())); err != nil {
 			return err
 		}
@@ -70,6 +70,7 @@ func (c *Context) Bind(dst interface{}) error {
 	default:
 		return ErrUnSupportedMediaType
 	}
+
 	return nil
 }
 
@@ -138,10 +139,46 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 	}
 }
 
+// HTML :
+func (c *Context) HTML(html string, statusCode ...int) error {
+	return c.HTMLBlob([]byte(html), statusCode...)
+}
+
+// HTMLBlob :
+func (c *Context) HTMLBlob(b []byte, statusCode ...int) error {
+	httpStatusCode := fasthttp.StatusOK
+	if len(statusCode) > 0 {
+		httpStatusCode = statusCode[0]
+	}
+	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
+	c.RequestCtx.Response.Header.SetStatusCode(httpStatusCode)
+	c.Write(b)
+	return nil
+}
+
 // Render :
 func (c *Context) Render(b []byte) error {
 	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
 	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusOK)
 	c.Write(b)
 	return nil
+}
+
+// NewAPIError :
+func (c *Context) NewAPIError(err error, params ...interface{}) error {
+	e := new(APIError)
+	e.Inner = err
+	if len(params) > 0 {
+		x, _ := params[0].(string)
+		e.Code = x
+	}
+	if len(params) > 1 {
+		x, _ := params[1].(string)
+		e.Message = x
+	}
+	if len(params) > 2 {
+		e.Description = params[2]
+	}
+	e.isDebug = true
+	return e
 }
