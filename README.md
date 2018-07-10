@@ -53,7 +53,29 @@ func main() {
 }
 ```
 
+## Variable Binding
+
+```go
+    api := raptor.New()
+    api.GET("/", func(c *raptor.Context) error {
+		var i struct {
+			Name string `json:"name" xml:"name" query:"name"`
+		}
+
+		if err := c.Bind(&i); err != nil {
+			return c.Response().BadRequest(c.NewAPIError(err))
+		}
+
+        return c.SuccessString("application/json", `{"message":"hello world"}`)
+	})
+	api.Start(":8080")
+```
+
+## Validation
+
 ## Error Handling
+
+## Custom Error
 
 packages we use :
 
