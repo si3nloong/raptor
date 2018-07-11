@@ -44,6 +44,7 @@ const (
 	HeaderXRequestedWith      = "X-Requested-With"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
+	HeaderUserAgent           = "User-Agent"
 
 	// Access control
 	HeaderAccessControlRequestMethod    = "Access-Control-Request-Method"
