@@ -18,6 +18,7 @@ const (
 // HTTP Headers
 const (
 	HeaderAccept              = "Accept"
+	HeaderAcceptCharset       = "Accept-Charset"
 	HeaderAcceptEncoding      = "Accept-Encoding"
 	HeaderAllow               = "Allow"
 	HeaderAuthorization       = "Authorization"

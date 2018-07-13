@@ -1,3 +1,7 @@
+# Bug / Issue
+
+- (2018-07-13) Add allow headers and allow methods to `CORS` middleware
+
 # Breaking Changes
 
 - (2018-07-05) Replaced input params of func `Render` from `func() []byte` to `[]byte`

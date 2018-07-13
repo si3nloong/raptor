@@ -24,7 +24,7 @@ var (
 		Skipper:      DefaultSkipper,
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{raptor.HEAD, raptor.GET, raptor.POST, raptor.PUT, raptor.PATCH, raptor.DELETE},
-		AllowHeaders: []string{raptor.HeaderOrigin, raptor.HeaderAccept, raptor.HeaderContentType},
+		AllowHeaders: []string{raptor.HeaderOrigin, raptor.HeaderAccept, raptor.HeaderContentType, raptor.HeaderAuthorization, raptor.HeaderContentLength, raptor.HeaderAcceptCharset},
 	}
 )
 
@@ -37,10 +37,10 @@ func CORS(config ...CORSConfig) raptor.MiddlewareFunc {
 	if c.Skipper == nil {
 		c.Skipper = DefaultSkipper
 	}
-	if c.AllowHeaders != nil && len(c.AllowHeaders) == 0 {
+	if c.AllowHeaders == nil {
 		c.AllowHeaders = DefaultCORSConfig.AllowHeaders
 	}
-	if c.AllowMethods != nil && len(c.AllowMethods) == 0 {
+	if c.AllowMethods == nil {
 		c.AllowMethods = DefaultCORSConfig.AllowMethods
 	}
 	return corsWithConfig(c)
