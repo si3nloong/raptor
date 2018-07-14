@@ -8,6 +8,6 @@ import (
 
 func TestServer(t *testing.T) {
 	r := raptor.New()
-	r.Group("/")
+	r.StaticGzip("/gzip", "assets/file.js.gz")
 	r.Start(":9001")
 }
