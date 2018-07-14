@@ -48,6 +48,6 @@ func TestMultiHost(t *testing.T) {
 	hosts["open.wetix.my:9000"] = open.Handler()
 	hosts["api.wetix.my:9000"] = api.Handler()
 
-	r := raptor.New()
-	r.Start(":9000", hosts.HostRouting)
+	// r := raptor.New()
+	// r.Start(":9000", hosts.HostRouting)
 }

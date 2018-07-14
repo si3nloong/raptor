@@ -91,6 +91,21 @@ func (r *Raptor) Static(prefix, path string) *Raptor {
 	return r
 }
 
+// StaticGzip :
+func (r *Raptor) StaticGzip(prefix, path string) *Raptor {
+	r.GET(prefix, func(c *Context) error {
+		c.RequestCtx.Response.Header.Set(HeaderContentEncoding, "gzip")
+
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		c.Write(b)
+		return nil
+	})
+	return r
+}
+
 // Group :
 func (r *Raptor) Group(path string, middleware ...MiddlewareFunc) *Group {
 	g := new(Group)

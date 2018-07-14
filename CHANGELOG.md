@@ -13,3 +13,4 @@
 
 - (2018-07-10) Introduced new func `NewAPIError`
 - (2018-07-10) Introduced new func `HTML`, `HTMLBlob`
+- (2018-07-14) Introduced static gzip support
