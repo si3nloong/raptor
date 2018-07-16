@@ -7,6 +7,7 @@ import (
 	"github.com/buaazp/fasthttprouter"
 	"github.com/fatih/color"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttputil"
 )
 
 func init() {
@@ -189,18 +190,36 @@ func (r *Raptor) addRoute(method string, path string, handler HandlerFunc, middl
 	return
 }
 
-// Start :
-func (r *Raptor) Start(port string, handler ...HandlerFunc) error {
+func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 	cb := r.router.Handler
-	if len(handler) > 0 {
+	if len(h) > 0 {
 		cb = func(ctx *fasthttp.RequestCtx) {
 			c := &Context{ctx}
-			if err := handler[0](c); err != nil {
+			if err := h[0](c); err != nil {
 				r.ErrorHandler(c, err)
 				return
 			}
 		}
 	}
+	return fasthttp.RequestHandler(cb)
+}
+
+// Start :
+func (r *Raptor) Start(port string, handler ...HandlerFunc) error {
 	log.Println("fasthttp server started on", port)
-	return fasthttp.ListenAndServe(port, cb)
+	return fasthttp.ListenAndServe(port, r.handler(handler...))
+}
+
+// StartTLS :
+func (r *Raptor) StartTLS(port string, certFile, keyFile string, handler ...HandlerFunc) error {
+	ln := fasthttputil.NewInmemoryListener()
+	certData, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return err
+	}
+	keyData, err := ioutil.ReadFile(keyFile)
+	if err != nil {
+		return err
+	}
+	return fasthttp.ServeTLSEmbed(ln, certData, keyData, r.handler(handler...))
 }

@@ -88,6 +88,9 @@ func (g *Group) DELETE(path string, h HandlerFunc, m ...MiddlewareFunc) {
 
 // Any :
 func (g *Group) Any(path string, h HandlerFunc, m ...MiddlewareFunc) {
-	g.addRoute(GET, path, h, m...)
+	methods := [...]string{CONNECT, PROPFIND, TRACE, HEAD, OPTIONS, GET, POST, PUT, PATCH, DELETE}
+	for i := 0; i < len(methods); i++ {
+		g.addRoute(methods[i], path, h, m...)
+	}
 	return
 }
