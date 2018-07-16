@@ -110,6 +110,8 @@ func (c *Context) Param(key string) string {
 		str = strconv.FormatFloat(vi, 'f', 10, 64)
 	case time.Time:
 		str = vi.Format(time.RFC3339)
+	case fmt.Stringer:
+		str = vi.String()
 	default:
 		str = fmt.Sprintf("%v", vi)
 	}
