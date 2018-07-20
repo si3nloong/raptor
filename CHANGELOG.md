@@ -1,6 +1,7 @@
 # Bug / Issue
 
 - (2018-07-13) Add allow headers and allow methods to `CORS` middleware
+- (2018-07-13) Fix query string issue for url encoded
 
 # Breaking Changes
 

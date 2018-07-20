@@ -39,7 +39,7 @@ func (c *Context) Bind(dst interface{}) error {
 		return fmt.Errorf("layout is not addressable")
 	}
 
-	query := strings.TrimSpace(c.QueryString())
+	query := string(bytes.TrimSpace(c.QueryArgs().QueryString()))
 	if query != "" {
 		values, err := url.ParseQuery(query)
 		if err != nil {
