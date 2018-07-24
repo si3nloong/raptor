@@ -1,8 +1,10 @@
 package raptor
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/buaazp/fasthttprouter"
 	"github.com/fatih/color"
@@ -81,14 +83,34 @@ func (r *Raptor) Use(middleware ...MiddlewareFunc) {
 
 // Static :
 func (r *Raptor) Static(prefix, path string) *Raptor {
-	r.GET(prefix, func(c *Context) error {
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil
-		}
-		c.Write(b)
-		return nil
-	})
+	// Remove the router get and use fasthttp router serve file
+	// r.GET(prefix, func(c *Context) error {
+	// 	b, err := ioutil.ReadFile(path)
+	// 	if err != nil {
+	// 		return nil
+	// 	}
+	// 	c.Write(b)
+	// 	return nil
+	// })
+
+	switch true {
+	case prefix[len(prefix)-1:] == "/":
+		prefix = fmt.Sprintf("%s*filepath", prefix)
+
+	default:
+		prefix = fmt.Sprintf("%s/*filepath", prefix)
+	}
+
+	switch false {
+	case !strings.HasPrefix(path, "./"):
+		path = fmt.Sprintf("./%s", path)
+
+	case !strings.HasPrefix(path, "/"):
+		path = fmt.Sprintf(".%s", path)
+	}
+
+	r.router.ServeFiles(prefix, path)
+
 	return r
 }
 

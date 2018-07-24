@@ -9,6 +9,7 @@
 - (2018-07-09) `Raptor` func `Start` now return `error` instead
 - (2018-07-09) Change error handling structure, it return HTTPError instead, and added property `ErrorHandler` to `Raptor` struct
 - (2018-07-10) Change core structure of `Raptor`
+- (2018-07-10) Change serve Static file to serve Static folder
 
 # New
 
