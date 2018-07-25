@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/pquerna/ffjson/ffjson"
-	"github.com/valyala/fasthttp"
+	"github.com/erikdubbelboer/fasthttp"
 )
 
 type (

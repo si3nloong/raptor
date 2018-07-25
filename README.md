@@ -3,7 +3,7 @@
 Inspired by Laravel and Iris
 
 Why Raptor web framework? We love fasthttp, we love speed.
-Basically Raptor is using [fasthttp](https://github.com/valyala/fasthttp), [fasthttprouter](https://github.com/buaazp/fasthttprouter), [ffjson](https://github.com/pquerna/ffjson) packages under the hood.
+Basically Raptor is using [fasthttp](https://github.com/erikdubbelboer/fasthttp), [fasthttprouter](https://github.com/thehowl/fasthttprouter), [ffjson](https://github.com/pquerna/ffjson) packages under the hood.
 
 ## Installation
 

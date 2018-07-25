@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/buaazp/fasthttprouter"
+	"github.com/erikdubbelboer/fasthttp"
+	"github.com/erikdubbelboer/fasthttp/fasthttputil"
 	"github.com/fatih/color"
-	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttputil"
+	"github.com/thehowl/fasthttprouter"
 )
 
 func init() {
@@ -83,17 +83,7 @@ func (r *Raptor) Use(middleware ...MiddlewareFunc) {
 
 // Static :
 func (r *Raptor) Static(prefix, path string) *Raptor {
-	// Remove the router get and use fasthttp router serve file
-	// r.GET(prefix, func(c *Context) error {
-	// 	b, err := ioutil.ReadFile(path)
-	// 	if err != nil {
-	// 		return nil
-	// 	}
-	// 	c.Write(b)
-	// 	return nil
-	// })
-
-	switch true {
+	switch {
 	case prefix[len(prefix)-1:] == "/":
 		prefix = fmt.Sprintf("%s*filepath", prefix)
 

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/si3nloong/raptor"
-	"github.com/valyala/fasthttp"
+	"github.com/erikdubbelboer/fasthttp"
 )
 
 // CSRFConfig :

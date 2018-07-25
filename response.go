@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 
+	"github.com/erikdubbelboer/fasthttp"
 	"github.com/pquerna/ffjson/ffjson"
-	"github.com/valyala/fasthttp"
 )
 
 type (
@@ -218,12 +218,12 @@ func (r *Response) ExpectationFailed(err error) error {
 
 // UnprocessableEntity : 422
 func (r *Response) UnprocessableEntity(err error) error {
-	return r.compileError(fasthttp.StatusUnprocessableEntity, err)
+	return r.compileError(422, err)
 }
 
 // Locked : 423
 func (r *Response) Locked(err error) error {
-	return r.compileError(fasthttp.StatusLocked, err)
+	return r.compileError(423, err)
 }
 
 // InternalServerError : 500
