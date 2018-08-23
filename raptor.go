@@ -167,8 +167,8 @@ func (r *Raptor) mergeHandler(handler HandlerFunc, middlewares ...MiddlewareFunc
 	return fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
 		h := handler
 		c := &Context{ctx}
-		for _, m := range middlewares {
-			h = m(h)
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			h = middlewares[i](h)
 		}
 		if err := h(c); err != nil {
 			r.ErrorHandler(c, err)
