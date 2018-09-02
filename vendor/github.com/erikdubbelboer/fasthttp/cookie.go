@@ -198,10 +198,10 @@ func (c *Cookie) Reset() {
 // the extended dst.
 func (c *Cookie) AppendBytes(dst []byte) []byte {
 	if len(c.key) > 0 {
-		dst = AppendQuotedArg(dst, c.key)
+		dst = append(dst, c.key...)
 		dst = append(dst, '=')
 	}
-	dst = AppendQuotedArg(dst, c.value)
+	dst = append(dst, c.value...)
 
 	if !c.expire.IsZero() {
 		c.bufKV.value = AppendHTTPDate(c.bufKV.value[:0], c.expire)
@@ -256,6 +256,23 @@ func (c *Cookie) Parse(src string) error {
 	return c.ParseBytes(c.buf)
 }
 
+// Case insensitive equality comparison of two []byte. Assumes only
+// letters need to be matched. This is used to compare cookie key
+// value pairs.
+func cookieKeyCompare(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := 0; i < len(a); i++ {
+		if a[i]|0x20 != b[i]|0x20 {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ParseBytes parses Set-Cookie header.
 func (c *Cookie) ParseBytes(src []byte) error {
 	c.Reset()
@@ -264,37 +281,52 @@ func (c *Cookie) ParseBytes(src []byte) error {
 	s.b = src
 
 	kv := &c.bufKV
-	if !s.next(kv, true) {
+	if !s.next(kv) {
 		return errNoCookies
 	}
 
 	c.key = append(c.key[:0], kv.key...)
 	c.value = append(c.value[:0], kv.value...)
 
-	for s.next(kv, false) {
-		if len(kv.key) == 0 && len(kv.value) == 0 {
-			continue
-		}
-		switch string(kv.key) {
-		case "expires":
-			v := b2s(kv.value)
-			exptime, err := time.ParseInLocation(time.RFC1123, v, time.UTC)
-			if err != nil {
-				return err
+	for s.next(kv) {
+		if len(kv.key) != 0 {
+			// Case insensitive switch on first char
+			switch kv.key[0] | 0x20 {
+			case 'e': // "expires"
+				if cookieKeyCompare(strCookieExpires, kv.key) {
+					v := b2s(kv.value)
+					exptime, err := time.ParseInLocation(time.RFC1123, v, time.UTC)
+					if err != nil {
+						return err
+					}
+					c.expire = exptime
+				}
+
+			case 'd': // "domain"
+				if cookieKeyCompare(strCookieDomain, kv.key) {
+					c.domain = append(c.domain[:0], kv.value...)
+				}
+
+			case 'p': // "path"
+				if cookieKeyCompare(strCookiePath, kv.key) {
+					c.path = append(c.path[:0], kv.value...)
+				}
 			}
-			c.expire = exptime
-		case "domain":
-			c.domain = append(c.domain[:0], kv.value...)
-		case "path":
-			c.path = append(c.path[:0], kv.value...)
-		case "":
-			switch string(kv.value) {
-			case "HttpOnly":
-				c.httpOnly = true
-			case "secure":
-				c.secure = true
+
+		} else if len(kv.value) != 0 {
+			// Case insensitive switch on first char
+			switch kv.value[0] | 0x20 {
+			case 'h': // "httponly"
+				if cookieKeyCompare(strCookieHTTPOnly, kv.value) {
+					c.httpOnly = true
+				}
+
+			case 's': // "secure"
+				if cookieKeyCompare(strCookieSecure, kv.value) {
+					c.secure = true
+				}
 			}
-		}
+		} // else empty or no match
 	}
 	return nil
 }
@@ -311,17 +343,30 @@ func getCookieKey(dst, src []byte) []byte {
 	if n >= 0 {
 		src = src[:n]
 	}
-	return decodeCookieArg(dst, src, true)
+	return decodeCookieArg(dst, src, false)
 }
 
 func appendRequestCookieBytes(dst []byte, cookies []argsKV) []byte {
 	for i, n := 0, len(cookies); i < n; i++ {
 		kv := &cookies[i]
 		if len(kv.key) > 0 {
-			dst = AppendQuotedArg(dst, kv.key)
+			dst = append(dst, kv.key...)
 			dst = append(dst, '=')
 		}
-		dst = AppendQuotedArg(dst, kv.value)
+		dst = append(dst, kv.value...)
+		if i+1 < n {
+			dst = append(dst, ';', ' ')
+		}
+	}
+	return dst
+}
+
+// For Response we can not use the above function as response cookies
+// already contain the key= in the value.
+func appendResponseCookieBytes(dst []byte, cookies []argsKV) []byte {
+	for i, n := 0, len(cookies); i < n; i++ {
+		kv := &cookies[i]
+		dst = append(dst, kv.value...)
 		if i+1 < n {
 			dst = append(dst, ';', ' ')
 		}
@@ -334,7 +379,7 @@ func parseRequestCookies(cookies []argsKV, src []byte) []argsKV {
 	s.b = src
 	var kv *argsKV
 	cookies, kv = allocArg(cookies)
-	for s.next(kv, true) {
+	for s.next(kv) {
 		if len(kv.key) > 0 || len(kv.value) > 0 {
 			cookies, kv = allocArg(cookies)
 		}
@@ -346,7 +391,7 @@ type cookieScanner struct {
 	b []byte
 }
 
-func (s *cookieScanner) next(kv *argsKV, decode bool) bool {
+func (s *cookieScanner) next(kv *argsKV) bool {
 	b := s.b
 	if len(b) == 0 {
 		return false
@@ -359,14 +404,14 @@ func (s *cookieScanner) next(kv *argsKV, decode bool) bool {
 		case '=':
 			if isKey {
 				isKey = false
-				kv.key = decodeCookieArg(kv.key, b[:i], decode)
+				kv.key = decodeCookieArg(kv.key, b[:i], false)
 				k = i + 1
 			}
 		case ';':
 			if isKey {
 				kv.key = kv.key[:0]
 			}
-			kv.value = decodeCookieArg(kv.value, b[k:i], decode)
+			kv.value = decodeCookieArg(kv.value, b[k:i], true)
 			s.b = b[i+1:]
 			return true
 		}
@@ -375,20 +420,22 @@ func (s *cookieScanner) next(kv *argsKV, decode bool) bool {
 	if isKey {
 		kv.key = kv.key[:0]
 	}
-	kv.value = decodeCookieArg(kv.value, b[k:], decode)
+	kv.value = decodeCookieArg(kv.value, b[k:], true)
 	s.b = b[len(b):]
 	return true
 }
 
-func decodeCookieArg(dst, src []byte, decode bool) []byte {
+func decodeCookieArg(dst, src []byte, skipQuotes bool) []byte {
 	for len(src) > 0 && src[0] == ' ' {
 		src = src[1:]
 	}
 	for len(src) > 0 && src[len(src)-1] == ' ' {
 		src = src[:len(src)-1]
 	}
-	if !decode {
-		return append(dst[:0], src...)
+	if skipQuotes {
+		if len(src) > 1 && src[0] == '"' && src[len(src)-1] == '"' {
+			src = src[1 : len(src)-1]
+		}
 	}
-	return decodeArg(dst, src, true)
+	return append(dst[:0], src...)
 }

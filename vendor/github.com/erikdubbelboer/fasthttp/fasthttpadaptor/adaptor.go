@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/valyala/fasthttp"
+	"github.com/erikdubbelboer/fasthttp"
 )
 
 // NewFastHTTPHandlerFunc wraps net/http handler func to fasthttp
@@ -25,7 +25,7 @@ import (
 //
 // So it is advisable using this function only for quick net/http -> fasthttp
 // switching. Then manually convert net/http handlers to fasthttp handlers
-// according to https://github.com/valyala/fasthttp#switching-from-nethttp-to-fasthttp .
+// according to https://github.com/erikdubbelboer/fasthttp#switching-from-nethttp-to-fasthttp .
 func NewFastHTTPHandlerFunc(h http.HandlerFunc) fasthttp.RequestHandler {
 	return NewFastHTTPHandler(h)
 }
@@ -45,7 +45,7 @@ func NewFastHTTPHandlerFunc(h http.HandlerFunc) fasthttp.RequestHandler {
 //
 // So it is advisable using this function only for quick net/http -> fasthttp
 // switching. Then manually convert net/http handlers to fasthttp handlers
-// according to https://github.com/valyala/fasthttp#switching-from-nethttp-to-fasthttp .
+// according to https://github.com/erikdubbelboer/fasthttp#switching-from-nethttp-to-fasthttp .
 func NewFastHTTPHandler(h http.Handler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		var r http.Request
@@ -62,7 +62,14 @@ func NewFastHTTPHandler(h http.Handler) fasthttp.RequestHandler {
 
 		hdr := make(http.Header)
 		ctx.Request.Header.VisitAll(func(k, v []byte) {
-			hdr.Set(string(k), string(v))
+			sk := string(k)
+			sv := string(v)
+			switch sk {
+			case "Transfer-Encoding":
+				r.TransferEncoding = append(r.TransferEncoding, sv)
+			default:
+				hdr.Set(sk, sv)
+			}
 		})
 		r.Header = hdr
 		r.Body = &netHTTPBody{body}

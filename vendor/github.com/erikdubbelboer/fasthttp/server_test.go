@@ -14,8 +14,131 @@ import (
 	"testing"
 	"time"
 
-	"github.com/valyala/fasthttp/fasthttputil"
+	"github.com/erikdubbelboer/fasthttp/fasthttputil"
 )
+
+func TestRequestCtxString(t *testing.T) {
+	var ctx RequestCtx
+
+	s := ctx.String()
+	expectedS := "#0000000000000000 - 0.0.0.0:0<->0.0.0.0:0 - GET http:///"
+	if s != expectedS {
+		t.Fatalf("unexpected ctx.String: %q. Expecting %q", s, expectedS)
+	}
+
+	ctx.Request.SetRequestURI("https://foobar.com/aaa?bb=c")
+	s = ctx.String()
+	expectedS = "#0000000000000000 - 0.0.0.0:0<->0.0.0.0:0 - GET https://foobar.com/aaa?bb=c"
+	if s != expectedS {
+		t.Fatalf("unexpected ctx.String: %q. Expecting %q", s, expectedS)
+	}
+}
+
+func TestServerErrSmallBuffer(t *testing.T) {
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			ctx.WriteString("shouldn't be never called")
+		},
+		ReadBufferSize: 20,
+	}
+
+	rw := &readWriter{}
+	rw.r.WriteString("GET / HTTP/1.1\r\nHost: aabb.com\r\nVERY-long-Header: sdfdfsd dsf dsaf dsf df fsd\r\n\r\n")
+
+	ch := make(chan error)
+	go func() {
+		ch <- s.ServeConn(rw)
+	}()
+
+	var serverErr error
+	select {
+	case serverErr = <-ch:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout")
+	}
+
+	if serverErr == nil {
+		t.Fatalf("expected error")
+	}
+
+	br := bufio.NewReader(&rw.w)
+	var resp Response
+	if err := resp.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	statusCode := resp.StatusCode()
+	if statusCode != StatusRequestHeaderFieldsTooLarge {
+		t.Fatalf("unexpected status code: %d. Expecting %d", statusCode, StatusRequestHeaderFieldsTooLarge)
+	}
+	if !resp.ConnectionClose() {
+		t.Fatalf("missing 'Connection: close' response header")
+	}
+
+	expectedErr := errSmallBuffer.Error()
+	if !strings.Contains(serverErr.Error(), expectedErr) {
+		t.Fatalf("unexpected log output: %v. Expecting %q", serverErr, expectedErr)
+	}
+}
+
+func TestRequestCtxIsTLS(t *testing.T) {
+	var ctx RequestCtx
+
+	// tls.Conn
+	ctx.c = &tls.Conn{}
+	if !ctx.IsTLS() {
+		t.Fatalf("IsTLS must return true")
+	}
+
+	// non-tls.Conn
+	ctx.c = &readWriter{}
+	if ctx.IsTLS() {
+		t.Fatalf("IsTLS must return false")
+	}
+
+	// overridden tls.Conn
+	ctx.c = &struct {
+		*tls.Conn
+		fooBar bool
+	}{}
+	if !ctx.IsTLS() {
+		t.Fatalf("IsTLS must return true")
+	}
+}
+
+func TestRequestCtxConn(t *testing.T) {
+	var ctx RequestCtx
+	ctx.c = &struct {
+		*tls.Conn
+		value bool
+	}{value: true}
+
+	tc, ok := ctx.Conn().(*struct {
+		*tls.Conn
+		value bool
+	})
+
+	if !ok || !tc.value {
+		t.Fatalf("Conn must return underlying connection")
+	}
+}
+
+func TestRequestCtxRedirectHTTPSSchemeless(t *testing.T) {
+	var ctx RequestCtx
+
+	s := "GET /foo/bar?baz HTTP/1.1\nHost: aaa.com\n\n"
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := ctx.Request.Read(br); err != nil {
+		t.Fatalf("cannot read request: %s", err)
+	}
+	ctx.Request.isTLS = true
+
+	ctx.Redirect("//foobar.com/aa/bbb", StatusFound)
+	location := ctx.Response.Header.Peek("Location")
+	expectedLocation := "https://foobar.com/aa/bbb"
+	if string(location) != expectedLocation {
+		t.Fatalf("Unexpected location: %q. Expecting %q", location, expectedLocation)
+	}
+}
 
 func TestRequestCtxRedirect(t *testing.T) {
 	testRequestCtxRedirect(t, "http://qqq/", "", "http://qqq/")
@@ -34,6 +157,7 @@ func TestRequestCtxRedirect(t *testing.T) {
 	testRequestCtxRedirect(t, "http://qqq/foo/bar?baz=111", "./.././../x.html", "http://qqq/x.html")
 	testRequestCtxRedirect(t, "http://qqq/foo/bar?baz=111", "http://foo.bar/baz", "http://foo.bar/baz")
 	testRequestCtxRedirect(t, "http://qqq/foo/bar?baz=111", "https://foo.bar/baz", "https://foo.bar/baz")
+	testRequestCtxRedirect(t, "https://foo.com/bar?aaa", "//google.com/aaa?bb", "https://google.com/aaa?bb")
 }
 
 func testRequestCtxRedirect(t *testing.T, origURL, redirectURL, expectedURL string) {
@@ -492,6 +616,52 @@ func TestServerWriteFastError(t *testing.T) {
 	}
 }
 
+func TestServerTLS(t *testing.T) {
+	text := []byte("Make fasthttp great again")
+	ln := fasthttputil.NewInmemoryListener()
+
+	certFile := "./ssl-cert-snakeoil.pem"
+	keyFile := "./ssl-cert-snakeoil.key"
+
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+			ctx.Write(text)
+		},
+	}
+
+	err := s.AppendCert(certFile, keyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		err = s.ServeTLS(ln, "", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	c := &Client{
+		ReadTimeout: time.Second * 2,
+		Dial: func(addr string) (net.Conn, error) {
+			return ln.Dial()
+		},
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	req, res := AcquireRequest(), AcquireResponse()
+	req.SetRequestURI("https://some.url")
+
+	err = c.Do(req, res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(text, res.Body()) {
+		t.Fatal("error transmitting information")
+	}
+}
+
 func TestServerServeTLSEmbed(t *testing.T) {
 	ln := fasthttputil.NewInmemoryListener()
 
@@ -511,6 +681,15 @@ func TestServerServeTLSEmbed(t *testing.T) {
 	ch := make(chan struct{})
 	go func() {
 		err := ServeTLSEmbed(ln, certData, keyData, func(ctx *RequestCtx) {
+			if !ctx.IsTLS() {
+				ctx.Error("expecting tls", StatusBadRequest)
+				return
+			}
+			scheme := ctx.URI().Scheme()
+			if string(scheme) != "https" {
+				ctx.Error(fmt.Sprintf("unexpected scheme=%q. Expecting %q", scheme, "https"), StatusBadRequest)
+				return
+			}
 			ctx.WriteString("success")
 		})
 		if err != nil {
@@ -677,6 +856,37 @@ Connection: close
 	case <-ch:
 	case <-time.After(time.Second):
 		t.Fatalf("timeout when waiting for the server to stop")
+	}
+}
+
+func TestServerGetWithContent(t *testing.T) {
+	h := func(ctx *RequestCtx) {
+		ctx.Success("foo/bar", []byte("success"))
+	}
+	s := &Server{
+		Handler: h,
+	}
+
+	rw := &readWriter{}
+	rw.r.WriteString("GET / HTTP/1.1\r\nHost: mm.com\r\nContent-Length: 5\r\n\r\nabcde")
+
+	ch := make(chan error)
+	go func() {
+		ch <- s.ServeConn(rw)
+	}()
+
+	select {
+	case err := <-ch:
+		if err != nil {
+			t.Fatalf("Unexpected error from serveConn: %s.", err)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout")
+	}
+
+	resp := rw.w.String()
+	if !strings.HasSuffix(resp, "success") {
+		t.Fatalf("unexpected response %s.", resp)
 	}
 }
 
@@ -1031,6 +1241,17 @@ func TestRequestCtxUserValue(t *testing.T) {
 			t.Fatalf("unexpected value obtained for key %q: %v. Expecting %d", k, v, i)
 		}
 	}
+	vlen := 0
+	ctx.VisitUserValues(func(key []byte, value interface{}) {
+		vlen++
+		v := ctx.UserValueBytes(key)
+		if v != value {
+			t.Fatalf("unexpected value obtained from VisitUserValues for key: %q, expecting: %#v but got: %#v", key, v, value)
+		}
+	})
+	if len(ctx.userValues) != vlen {
+		t.Fatalf("the length of user values returned from VisitUserValues is not equal to the length of the userValues, expecting: %d but got: %d", len(ctx.userValues), vlen)
+	}
 }
 
 func TestServerHeadRequest(t *testing.T) {
@@ -1136,7 +1357,7 @@ func TestServerExpect100Continue(t *testing.T) {
 }
 
 func TestCompressHandler(t *testing.T) {
-	expectedBody := "foo/bar/baz"
+	expectedBody := string(createFixedBody(2e4))
 	h := CompressHandler(func(ctx *RequestCtx) {
 		ctx.Write([]byte(expectedBody))
 	})
@@ -1496,6 +1717,9 @@ func TestRequestCtxHijack(t *testing.T) {
 	hijackStopCh := make(chan struct{})
 	s := &Server{
 		Handler: func(ctx *RequestCtx) {
+			if ctx.Hijacked() {
+				t.Fatalf("connection mustn't be hijacked")
+			}
 			ctx.Hijack(func(c net.Conn) {
 				<-hijackStartCh
 
@@ -1518,6 +1742,9 @@ func TestRequestCtxHijack(t *testing.T) {
 					}
 				}
 			})
+			if !ctx.Hijacked() {
+				t.Fatalf("connection must be hijacked")
+			}
 			ctx.Success("foo/bar", []byte("hijack it!"))
 		},
 	}
@@ -1728,9 +1955,17 @@ func TestServerGetOnly(t *testing.T) {
 		t.Fatalf("timeout")
 	}
 
-	resp := rw.w.Bytes()
-	if len(resp) > 0 {
-		t.Fatalf("unexpected response %q. Expecting zero", resp)
+	br := bufio.NewReader(&rw.w)
+	var resp Response
+	if err := resp.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	statusCode := resp.StatusCode()
+	if statusCode != StatusBadRequest {
+		t.Fatalf("unexpected status code: %d. Expecting %d", statusCode, StatusBadRequest)
+	}
+	if !resp.ConnectionClose() {
+		t.Fatalf("missing 'Connection: close' response header")
 	}
 }
 
@@ -2245,6 +2480,31 @@ func TestServerConnError(t *testing.T) {
 	}
 }
 
+func TestServeConnHex2intTable(t *testing.T) {
+	s := &Server{
+		Handler: func(ctx *RequestCtx) {
+		},
+	}
+
+	rw := &readWriter{}
+	rw.r.WriteString("GET / HTTP/1.1\r\nHost: google.com\r\nTransfer-Encoding: chunked\r\n\r\n\xff")
+
+	ch := make(chan error)
+	go func() {
+		ch <- s.ServeConn(rw)
+	}()
+
+	var err error
+	select {
+	case err = <-ch:
+	case <-time.After(100 * time.Millisecond):
+		t.Fatalf("timeout")
+	}
+	if err.Error() != "empty hex number" {
+		t.Fatalf("expected: empty hex number")
+	}
+}
+
 func TestServeConnSingleRequest(t *testing.T) {
 	s := &Server{
 		Handler: func(ctx *RequestCtx) {
@@ -2302,6 +2562,121 @@ func TestServeConnMultiRequests(t *testing.T) {
 	br := bufio.NewReader(&rw.w)
 	verifyResponse(t, br, 200, "aaa", "requestURI=/foo/bar?baz, host=google.com")
 	verifyResponse(t, br, 200, "aaa", "requestURI=/abc, host=foobar.com")
+}
+
+func TestShutdown(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+	h := func(ctx *RequestCtx) {
+		time.Sleep(time.Millisecond * 500)
+		ctx.Success("aaa/bbb", []byte("real response"))
+	}
+	s := &Server{
+		Handler: h,
+	}
+	serveCh := make(chan struct{})
+	go func() {
+		if err := s.Serve(ln); err != nil {
+			t.Fatalf("unexepcted error: %s", err)
+		}
+		_, err := ln.Dial()
+		if err == nil {
+			t.Fatalf("server is still listening")
+		}
+		serveCh <- struct{}{}
+	}()
+
+	clientCh := make(chan struct{})
+	go func() {
+		conn, err := ln.Dial()
+		if err != nil {
+			t.Fatalf("unexepcted error: %s", err)
+		}
+		if _, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: google.com\r\n\r\n")); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		br := bufio.NewReader(conn)
+		verifyResponse(t, br, StatusOK, "aaa/bbb", "real response")
+		clientCh <- struct{}{}
+	}()
+
+	time.Sleep(time.Millisecond * 100)
+
+	shutdownCh := make(chan struct{})
+	go func() {
+		if err := s.Shutdown(); err != nil {
+			t.Fatalf("unexepcted error: %s", err)
+		}
+		shutdownCh <- struct{}{}
+	}()
+
+	done := 0
+	for {
+		select {
+		case <-time.After(time.Second):
+			t.Fatalf("shutdown took too long")
+		case <-serveCh:
+			done++
+		case <-clientCh:
+			done++
+		case <-shutdownCh:
+			done++
+		}
+		if done == 3 {
+			return
+		}
+	}
+}
+
+func TestShutdownReuse(t *testing.T) {
+	ln := fasthttputil.NewInmemoryListener()
+	h := func(ctx *RequestCtx) {
+		ctx.Success("aaa/bbb", []byte("real response"))
+	}
+	s := &Server{
+		Handler:              h,
+		MaxKeepaliveDuration: time.Millisecond * 100,
+	}
+	go func() {
+		if err := s.Serve(ln); err != nil {
+			t.Fatalf("unexepcted error: %s", err)
+		}
+	}()
+
+	conn, err := ln.Dial()
+	if err != nil {
+		t.Fatalf("unexepcted error: %s", err)
+	}
+	if _, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: google.com\r\n\r\n")); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	br := bufio.NewReader(conn)
+	verifyResponse(t, br, StatusOK, "aaa/bbb", "real response")
+
+	if err := s.Shutdown(); err != nil {
+		t.Fatalf("unexepcted error: %s", err)
+	}
+
+	ln = fasthttputil.NewInmemoryListener()
+
+	go func() {
+		if err := s.Serve(ln); err != nil {
+			t.Fatalf("unexepcted error: %s", err)
+		}
+	}()
+
+	conn, err = ln.Dial()
+	if err != nil {
+		t.Fatalf("unexepcted error: %s", err)
+	}
+	if _, err = conn.Write([]byte("GET / HTTP/1.1\r\nHost: google.com\r\n\r\n")); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	br = bufio.NewReader(conn)
+	verifyResponse(t, br, StatusOK, "aaa/bbb", "real response")
+
+	if err := s.Shutdown(); err != nil {
+		t.Fatalf("unexepcted error: %s", err)
+	}
 }
 
 func verifyResponse(t *testing.T, r *bufio.Reader, expectedStatusCode int, expectedContentType, expectedBody string) {

@@ -4,13 +4,23 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
 	"sort"
 	"testing"
 	"time"
 )
+
+type TestLogger struct {
+	t *testing.T
+}
+
+func (t TestLogger) Printf(format string, args ...interface{}) {
+	t.t.Logf(format, args...)
+}
 
 func TestNewVHostPathRewriter(t *testing.T) {
 	var ctx RequestCtx
@@ -51,6 +61,43 @@ func TestNewVHostPathRewriterMaliciousHost(t *testing.T) {
 	}
 }
 
+func testPathNotFound(t *testing.T, pathNotFoundFunc RequestHandler) {
+	var ctx RequestCtx
+	var req Request
+	req.SetRequestURI("http//some.url/file")
+	ctx.Init(&req, nil, TestLogger{t})
+
+	fs := &FS{
+		Root:         "./",
+		PathNotFound: pathNotFoundFunc,
+	}
+	fs.NewRequestHandler()(&ctx)
+
+	if pathNotFoundFunc == nil {
+		// different to ...
+		if !bytes.Equal(ctx.Response.Body(),
+			[]byte("Cannot open requested path")) {
+			t.Fatalf("response defers. Response: %q", ctx.Response.Body())
+		}
+	} else {
+		// Equals to ...
+		if bytes.Equal(ctx.Response.Body(),
+			[]byte("Cannot open requested path")) {
+			t.Fatalf("respones defers. Response: %q", ctx.Response.Body())
+		}
+	}
+}
+
+func TestPathNotFound(t *testing.T) {
+	testPathNotFound(t, nil)
+}
+
+func TestPathNotFoundFunc(t *testing.T) {
+	testPathNotFound(t, func(ctx *RequestCtx) {
+		ctx.WriteString("Not found hehe")
+	})
+}
+
 func TestServeFileHead(t *testing.T) {
 	var ctx RequestCtx
 	var req Request
@@ -86,6 +133,57 @@ func TestServeFileHead(t *testing.T) {
 	if contentLength != len(expectedBody) {
 		t.Fatalf("unexpected Content-Length: %d. expecting %d", contentLength, len(expectedBody))
 	}
+}
+
+func TestServeFileSmallNoReadFrom(t *testing.T) {
+	teststr := "hello, world!"
+
+	tempdir, err := ioutil.TempDir("", "httpexpect")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempdir)
+
+	if err := ioutil.WriteFile(
+		path.Join(tempdir, "hello"), []byte(teststr), 0666); err != nil {
+		t.Fatal(err)
+	}
+
+	var ctx RequestCtx
+	var req Request
+	req.SetRequestURI("http://foobar.com/baz")
+	ctx.Init(&req, nil, nil)
+
+	ServeFile(&ctx, path.Join(tempdir, "hello"))
+
+	reader, ok := ctx.Response.bodyStream.(*fsSmallFileReader)
+	if !ok {
+		t.Fatal("expected fsSmallFileReader")
+	}
+
+	buf := bytes.NewBuffer(nil)
+
+	n, err := reader.WriteTo(pureWriter{buf})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if n != int64(len(teststr)) {
+		t.Fatalf("expected %d bytes, got %d bytes", len(teststr), n)
+	}
+
+	body := string(buf.Bytes())
+	if body != teststr {
+		t.Fatalf("expected '%s'", teststr)
+	}
+}
+
+type pureWriter struct {
+	w io.Writer
+}
+
+func (pw pureWriter) Write(p []byte) (nn int, err error) {
+	return pw.w.Write(p)
 }
 
 func TestServeFileCompressed(t *testing.T) {

@@ -26,8 +26,8 @@
   version = "1.5.0"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/erikdubbelboer/fasthttp"
-  version = "20160617.0.0"
 
 [[constraint]]
   name = "github.com/fatih/color"

@@ -241,6 +241,14 @@ type FS struct {
 	// By default request path is not modified.
 	PathRewrite PathRewriteFunc
 
+	// PathNotFound fires when file is not found in filesystem
+	// this functions tries to replace "Cannot open requested path"
+	// server response giving to the programmer the control of server flow.
+	//
+	// By default PathNotFound returns
+	// "Cannot open requested path"
+	PathNotFound RequestHandler
+
 	// Expiration duration for inactive file handlers.
 	//
 	// FSHandlerCacheDuration is used by default.
@@ -343,6 +351,7 @@ func (fs *FS) initRequestHandler() {
 		pathRewrite:          fs.PathRewrite,
 		generateIndexPages:   fs.GenerateIndexPages,
 		compress:             fs.Compress,
+		pathNotFound:         fs.PathNotFound,
 		acceptByteRange:      fs.AcceptByteRange,
 		cacheDuration:        cacheDuration,
 		compressedFileSuffix: compressedFileSuffix,
@@ -365,6 +374,7 @@ type fsHandler struct {
 	root                 string
 	indexNames           []string
 	pathRewrite          PathRewriteFunc
+	pathNotFound         RequestHandler
 	generateIndexPages   bool
 	compress             bool
 	acceptByteRange      bool
@@ -593,7 +603,7 @@ func (r *fsSmallFileReader) WriteTo(w io.Writer) (int64, error) {
 	curPos := r.startPos
 	bufv := copyBufPool.Get()
 	buf := bufv.([]byte)
-	for err != nil {
+	for err == nil {
 		tailLen := r.endPos - curPos
 		if tailLen <= 0 {
 			break
@@ -726,7 +736,12 @@ func (h *fsHandler) handleRequest(ctx *RequestCtx) {
 			}
 		} else if err != nil {
 			ctx.Logger().Printf("cannot open file %q: %s", filePath, err)
-			ctx.Error("Cannot open requested path", StatusNotFound)
+			if h.pathNotFound == nil {
+				ctx.Error("Cannot open requested path", StatusNotFound)
+			} else {
+				h.pathNotFound(ctx)
+				ctx.SetStatusCode(StatusNotFound)
+			}
 			return
 		}
 
@@ -958,12 +973,7 @@ func (h *fsHandler) createDirIndex(base *URI, dirPath string, mustCompress bool)
 
 	if mustCompress {
 		var zbuf ByteBuffer
-		zw := acquireGzipWriter(&zbuf, CompressDefaultCompression)
-		_, err = zw.Write(w.B)
-		releaseGzipWriter(zw)
-		if err != nil {
-			return nil, fmt.Errorf("error when compressing automatically generated index for directory %q: %s", dirPath, err)
-		}
+		zbuf.B = AppendGzipBytesLevel(zbuf.B, w.B, CompressDefaultCompression)
 		w = &zbuf
 	}
 
@@ -1048,12 +1058,12 @@ func (h *fsHandler) compressFileNolock(f *os.File, fileInfo os.FileInfo, filePat
 		return nil, errNoCreatePermission
 	}
 
-	zw := acquireGzipWriter(zf, CompressDefaultCompression)
+	zw := acquireStacklessGzipWriter(zf, CompressDefaultCompression)
 	_, err = copyZeroAlloc(zw, f)
 	if err1 := zw.Flush(); err == nil {
 		err = err1
 	}
-	releaseGzipWriter(zw)
+	releaseStacklessGzipWriter(zw, CompressDefaultCompression)
 	zf.Close()
 	f.Close()
 	if err != nil {

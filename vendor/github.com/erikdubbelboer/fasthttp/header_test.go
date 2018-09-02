@@ -10,6 +10,242 @@ import (
 	"testing"
 )
 
+func TestResponseHeaderEmptyValueFromHeader(t *testing.T) {
+	var h1 ResponseHeader
+	h1.SetContentType("foo/bar")
+	h1.Set("EmptyValue1", "")
+	h1.Set("EmptyValue2", " ")
+	s := h1.String()
+
+	var h ResponseHeader
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := h.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if string(h.ContentType()) != string(h1.ContentType()) {
+		t.Fatalf("unexpected content-type: %q. Expecting %q", h.ContentType(), h1.ContentType())
+	}
+	v1 := h.Peek("EmptyValue1")
+	if len(v1) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v1)
+	}
+	v2 := h.Peek("EmptyValue2")
+	if len(v2) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v2)
+	}
+}
+
+func TestResponseHeaderEmptyValueFromString(t *testing.T) {
+	s := "HTTP/1.1 200 OK\r\n" +
+		"EmptyValue1:\r\n" +
+		"Content-Type: foo/bar\r\n" +
+		"EmptyValue2: \r\n" +
+		"\r\n"
+
+	var h ResponseHeader
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := h.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if string(h.ContentType()) != "foo/bar" {
+		t.Fatalf("unexpected content-type: %q. Expecting %q", h.ContentType(), "foo/bar")
+	}
+	v1 := h.Peek("EmptyValue1")
+	if len(v1) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v1)
+	}
+	v2 := h.Peek("EmptyValue2")
+	if len(v2) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v2)
+	}
+}
+
+func TestRequestHeaderEmptyValueFromHeader(t *testing.T) {
+	var h1 RequestHeader
+	h1.SetRequestURI("/foo/bar")
+	h1.SetHost("foobar")
+	h1.Set("EmptyValue1", "")
+	h1.Set("EmptyValue2", " ")
+	s := h1.String()
+
+	var h RequestHeader
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := h.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if string(h.Host()) != string(h1.Host()) {
+		t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), h1.Host())
+	}
+	v1 := h.Peek("EmptyValue1")
+	if len(v1) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v1)
+	}
+	v2 := h.Peek("EmptyValue2")
+	if len(v2) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v2)
+	}
+}
+
+func TestRequestHeaderEmptyValueFromString(t *testing.T) {
+	s := "GET / HTTP/1.1\r\n" +
+		"EmptyValue1:\r\n" +
+		"Host: foobar\r\n" +
+		"EmptyValue2: \r\n" +
+		"\r\n"
+	var h RequestHeader
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := h.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	if string(h.Host()) != "foobar" {
+		t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "foobar")
+	}
+	v1 := h.Peek("EmptyValue1")
+	if len(v1) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v1)
+	}
+	v2 := h.Peek("EmptyValue2")
+	if len(v2) > 0 {
+		t.Fatalf("expecting empty value. Got %q", v2)
+	}
+}
+
+func TestRequestRawHeaders(t *testing.T) {
+	kvs := "host: foobar\r\n" +
+		"value: b\r\n" +
+		"\r\n"
+	t.Run("normalized", func(t *testing.T) {
+		s := "GET / HTTP/1.1\r\n" + kvs
+		exp := kvs
+		var h RequestHeader
+		br := bufio.NewReader(bytes.NewBufferString(s))
+		if err := h.Read(br); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if string(h.Host()) != "foobar" {
+			t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "foobar")
+		}
+		v2 := h.Peek("Value")
+		if !bytes.Equal(v2, []byte{'b'}) {
+			t.Fatalf("expecting non empty value. Got %q", v2)
+		}
+		if raw := h.RawHeaders(); string(raw) != exp {
+			t.Fatalf("expected header %q, got %q", exp, raw)
+		}
+	})
+	for _, n := range []int{0, 1, 4, 8} {
+		t.Run(fmt.Sprintf("post-%dk", n), func(t *testing.T) {
+			l := 1024 * n
+			body := make([]byte, l)
+			for i := range body {
+				body[i] = 'a'
+			}
+			cl := fmt.Sprintf("Content-Length: %d\r\n", l)
+			s := "POST / HTTP/1.1\r\n" + cl + kvs + string(body)
+			exp := cl + kvs
+			var h RequestHeader
+			br := bufio.NewReader(bytes.NewBufferString(s))
+			if err := h.Read(br); err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			if string(h.Host()) != "foobar" {
+				t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "foobar")
+			}
+			v2 := h.Peek("Value")
+			if !bytes.Equal(v2, []byte{'b'}) {
+				t.Fatalf("expecting non empty value. Got %q", v2)
+			}
+			if raw := h.RawHeaders(); string(raw) != exp {
+				t.Fatalf("expected header %q, got %q", exp, raw)
+			}
+		})
+	}
+	t.Run("http10", func(t *testing.T) {
+		s := "GET / HTTP/1.0\r\n" + kvs
+		exp := kvs
+		var h RequestHeader
+		br := bufio.NewReader(bytes.NewBufferString(s))
+		if err := h.Read(br); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if string(h.Host()) != "foobar" {
+			t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "foobar")
+		}
+		v2 := h.Peek("Value")
+		if !bytes.Equal(v2, []byte{'b'}) {
+			t.Fatalf("expecting non empty value. Got %q", v2)
+		}
+		if raw := h.RawHeaders(); string(raw) != exp {
+			t.Fatalf("expected header %q, got %q", exp, raw)
+		}
+	})
+	t.Run("non-normalized", func(t *testing.T) {
+		s := "GET / HTTP/1.1\r\n" + kvs
+		exp := kvs
+		var h RequestHeader
+		h.DisableNormalizing()
+		br := bufio.NewReader(bytes.NewBufferString(s))
+		if err := h.Read(br); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if string(h.Host()) != "" {
+			t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "")
+		}
+		v2 := h.Peek("value")
+		if !bytes.Equal(v2, []byte{'b'}) {
+			t.Fatalf("expecting non empty value. Got %q", v2)
+		}
+		if raw := h.RawHeaders(); string(raw) != exp {
+			t.Fatalf("expected header %q, got %q", exp, raw)
+		}
+	})
+	t.Run("no-kvs", func(t *testing.T) {
+		s := "GET / HTTP/1.1\r\n\r\n"
+		exp := ""
+		var h RequestHeader
+		h.DisableNormalizing()
+		br := bufio.NewReader(bytes.NewBufferString(s))
+		if err := h.Read(br); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if string(h.Host()) != "" {
+			t.Fatalf("unexpected host: %q. Expecting %q", h.Host(), "")
+		}
+		v1 := h.Peek("NoKey")
+		if len(v1) > 0 {
+			t.Fatalf("expecting empty value. Got %q", v1)
+		}
+		if raw := h.RawHeaders(); string(raw) != exp {
+			t.Fatalf("expected header %q, got %q", exp, raw)
+		}
+	})
+}
+
+func TestRequestHeaderSetCookieWithSpecialChars(t *testing.T) {
+	var h RequestHeader
+	h.Set("Cookie", "ID&14")
+	s := h.String()
+
+	if !strings.Contains(s, "Cookie: ID&14") {
+		t.Fatalf("Missing cookie in request header: [%s]", s)
+	}
+
+	var h1 RequestHeader
+	br := bufio.NewReader(bytes.NewBufferString(s))
+	if err := h1.Read(br); err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	cookie := h1.Peek("Cookie")
+	if string(cookie) != "ID&14" {
+		t.Fatalf("unexpected cooke: %q. Expecting %q", cookie, "ID&14")
+	}
+
+	cookie = h1.Cookie("")
+	if string(cookie) != "ID&14" {
+		t.Fatalf("unexpected cooke: %q. Expecting %q", cookie, "ID&14")
+	}
+}
+
 func TestResponseHeaderDefaultStatusCode(t *testing.T) {
 	var h ResponseHeader
 	statusCode := h.StatusCode()
@@ -306,9 +542,6 @@ func TestRequestHeaderHTTP10ConnectionClose(t *testing.T) {
 		t.Fatalf("unexpected error: %s", err)
 	}
 
-	if !h.connectionCloseFast() {
-		t.Fatalf("expecting 'Connection: close' request header")
-	}
 	if !h.ConnectionClose() {
 		t.Fatalf("expecting 'Connection: close' request header")
 	}
@@ -327,32 +560,33 @@ func TestRequestHeaderHTTP10ConnectionKeepAlive(t *testing.T) {
 	}
 }
 
-func TestBufferStartEnd(t *testing.T) {
-	testBufferStartEnd(t, "", "", "")
-	testBufferStartEnd(t, "foobar", "foobar", "")
+func TestBufferSnippet(t *testing.T) {
+	testBufferSnippet(t, "", `""`)
+	testBufferSnippet(t, "foobar", `"foobar"`)
 
 	b := string(createFixedBody(199))
-	testBufferStartEnd(t, b, b, "")
+	bExpected := fmt.Sprintf("%q", b)
+	testBufferSnippet(t, b, bExpected)
 	for i := 0; i < 10; i++ {
 		b += "foobar"
-		testBufferStartEnd(t, b, b, "")
+		bExpected = fmt.Sprintf("%q", b)
+		testBufferSnippet(t, b, bExpected)
 	}
 
 	b = string(createFixedBody(400))
-	testBufferStartEnd(t, b, b, "")
+	bExpected = fmt.Sprintf("%q", b)
+	testBufferSnippet(t, b, bExpected)
 	for i := 0; i < 10; i++ {
 		b += "sadfqwer"
-		testBufferStartEnd(t, b, b[:200], b[len(b)-200:])
+		bExpected = fmt.Sprintf("%q...%q", b[:200], b[len(b)-200:])
+		testBufferSnippet(t, b, bExpected)
 	}
 }
 
-func testBufferStartEnd(t *testing.T, buf, expectedStart, expectedEnd string) {
-	start, end := bufferStartEnd([]byte(buf))
-	if string(start) != expectedStart {
-		t.Fatalf("unexpected start %q. Expecting %q. buf %q", start, expectedStart, buf)
-	}
-	if string(end) != expectedEnd {
-		t.Fatalf("unexpected end %q. Expecting %q. buf %q", end, expectedEnd, buf)
+func testBufferSnippet(t *testing.T, buf, expectedSnippet string) {
+	snippet := bufferSnippet([]byte(buf))
+	if snippet != expectedSnippet {
+		t.Fatalf("unexpected snippet %s. Expecting %s", snippet, expectedSnippet)
 	}
 }
 
@@ -572,6 +806,9 @@ func TestRequestMultipartFormBoundary(t *testing.T) {
 
 	// boundary after other content-type params
 	testRequestMultipartFormBoundary(t, "POST / HTTP/1.1\r\nContent-Type: multipart/form-data;   foo=bar;   boundary=--aaabb  \r\n\r\n", "--aaabb")
+
+	// quoted boundary
+	testRequestMultipartFormBoundary(t, "POST / HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=\"foobar\"\r\n\r\n", "foobar")
 
 	var h RequestHeader
 	h.SetMultipartFormBoundary("foobarbaz")
@@ -794,15 +1031,6 @@ func TestRequestHeaderEmptyMethod(t *testing.T) {
 
 	if !h.IsGet() {
 		t.Fatalf("empty method must be equivalent to GET")
-	}
-	if h.IsPost() {
-		t.Fatalf("empty method cannot be POST")
-	}
-	if h.IsHead() {
-		t.Fatalf("empty method cannot be HEAD")
-	}
-	if h.IsDelete() {
-		t.Fatalf("empty method cannot be DELETE")
 	}
 }
 
@@ -1261,6 +1489,90 @@ func TestRequestHeaderCookie(t *testing.T) {
 	}
 	if len(h.Cookie("привет")) > 0 {
 		t.Fatalf("Unexpected cookie found: %q", h.Cookie("привет"))
+	}
+}
+
+func TestRequestHeaderCookieIssue313(t *testing.T) {
+	var h RequestHeader
+	h.SetRequestURI("/")
+	h.Set("Host", "foobar.com")
+
+	h.SetCookie("foo", "bar")
+
+	if string(h.Peek("Cookie")) != "foo=bar" {
+		t.Fatalf("Unexpected Cookie header %q. Expected %q", h.Peek("Cookie"), "foo=bar")
+	}
+	cookieSeen := false
+	h.VisitAll(func(key, value []byte) {
+		switch string(key) {
+		case "Cookie":
+			cookieSeen = true
+		}
+	})
+	if !cookieSeen {
+		t.Fatalf("Cookie not present in VisitAll")
+	}
+
+	if string(h.Cookie("foo")) != "bar" {
+		t.Fatalf("Unexpected cookie value %q. Exepcted %q", h.Cookie("foo"), "bar")
+	}
+
+	if string(h.Peek("Cookie")) != "foo=bar" {
+		t.Fatalf("Unexpected Cookie header %q. Expected %q", h.Peek("Cookie"), "foo=bar")
+	}
+	cookieSeen = false
+	h.VisitAll(func(key, value []byte) {
+		switch string(key) {
+		case "Cookie":
+			cookieSeen = true
+		}
+	})
+	if !cookieSeen {
+		t.Fatalf("Cookie not present in VisitAll")
+	}
+}
+
+func TestResponseHeaderCookieIssue4(t *testing.T) {
+	var h ResponseHeader
+
+	c := AcquireCookie()
+	c.SetKey("foo")
+	c.SetValue("bar")
+	h.SetCookie(c)
+
+	if string(h.Peek("Set-Cookie")) != "foo=bar" {
+		t.Fatalf("Unexpected Set-Cookie header %q. Expected %q", h.Peek("Set-Cookie"), "foo=bar")
+	}
+	cookieSeen := false
+	h.VisitAll(func(key, value []byte) {
+		switch string(key) {
+		case "Set-Cookie":
+			cookieSeen = true
+		}
+	})
+	if !cookieSeen {
+		t.Fatalf("Set-Cookie not present in VisitAll")
+	}
+
+	c = AcquireCookie()
+	c.SetKey("foo")
+	h.Cookie(c)
+	if string(c.Value()) != "bar" {
+		t.Fatalf("Unexpected cookie value %q. Exepcted %q", c.Value(), "bar")
+	}
+
+	if string(h.Peek("Set-Cookie")) != "foo=bar" {
+		t.Fatalf("Unexpected Set-Cookie header %q. Expected %q", h.Peek("Set-Cookie"), "foo=bar")
+	}
+	cookieSeen = false
+	h.VisitAll(func(key, value []byte) {
+		switch string(key) {
+		case "Set-Cookie":
+			cookieSeen = true
+		}
+	})
+	if !cookieSeen {
+		t.Fatalf("Set-Cookie not present in VisitAll")
 	}
 }
 

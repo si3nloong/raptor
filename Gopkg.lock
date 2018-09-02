@@ -8,13 +8,10 @@
   version = "v1.5"
 
 [[projects]]
+  branch = "master"
   name = "github.com/erikdubbelboer/fasthttp"
-  packages = [
-    ".",
-    "fasthttputil"
-  ]
-  revision = "d42167fd04f636e20b005e9934159e95454233c7"
-  version = "v20160617"
+  packages = [".","fasthttputil","stackless"]
+  revision = "49813ba5357be9434b81cee8fe2d1fa1409aeb6d"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -24,10 +21,7 @@
 
 [[projects]]
   name = "github.com/go-playground/locales"
-  packages = [
-    ".",
-    "currency"
-  ]
+  packages = [".","currency"]
   revision = "f63010822830b6fe52288ee52d5a1151088ce039"
   version = "v0.12.1"
 
@@ -39,11 +33,7 @@
 
 [[projects]]
   name = "github.com/klauspost/compress"
-  packages = [
-    "flate",
-    "gzip",
-    "zlib"
-  ]
+  packages = ["flate","gzip","zlib"]
   revision = "b939724e787a27c0005cabe3f78e7ed7987ac74f"
   version = "v1.4.0"
 
@@ -62,17 +52,13 @@
 [[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   branch = "master"
   name = "github.com/pquerna/ffjson"
-  packages = [
-    "ffjson",
-    "fflib/v1",
-    "fflib/v1/internal"
-  ]
+  packages = ["ffjson","fflib/v1","fflib/v1/internal"]
   revision = "af8b230fcd2007c7095168ca8ab94c68b60840c6"
 
 [[projects]]
@@ -82,16 +68,16 @@
   version = "v0.2.1"
 
 [[projects]]
-  name = "github.com/valyala/fasthttp"
-  packages = ["fasthttputil"]
-  revision = "e5f51c11919d4f66400334047b897ef0a94c6f3c"
-  version = "v20180529"
+  branch = "master"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "d99a578cf41bfccdeaf48b0845c823a4b8b0ad5e"
+  revision = "fa5fdf94c78965f1aa8423f0cc50b8b8d728b05a"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v9"
@@ -102,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "599318897afc4d5662e263c06c0f55baa97209319a49c6b75bc6ebbd4c59d649"
+  inputs-digest = "6245015c34f73c6917194a3eed54ddfd148c4af5e8c7bb2f4cc9deb034508666"
   solver-name = "gps-cdcl"
   solver-version = 1
