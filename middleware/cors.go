@@ -21,10 +21,11 @@ type CORSConfig struct {
 var (
 	// DefaultCORSConfig is the default CORS middleware config.
 	DefaultCORSConfig = CORSConfig{
-		Skipper:      DefaultSkipper,
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{raptor.HEAD, raptor.GET, raptor.POST, raptor.PUT, raptor.PATCH, raptor.DELETE},
-		AllowHeaders: []string{raptor.HeaderOrigin, raptor.HeaderAccept, raptor.HeaderContentType, raptor.HeaderAuthorization, raptor.HeaderContentLength, raptor.HeaderAcceptCharset},
+		Skipper:       DefaultSkipper,
+		AllowOrigins:  []string{"*"},
+		AllowMethods:  []string{raptor.HEAD, raptor.GET, raptor.POST, raptor.PUT, raptor.PATCH, raptor.DELETE},
+		AllowHeaders:  []string{raptor.HeaderOrigin, raptor.HeaderAccept, raptor.HeaderContentType, raptor.HeaderAuthorization, raptor.HeaderContentLength, raptor.HeaderAcceptCharset},
+		ExposeHeaders: []string{raptor.HeaderContentDisposition},
 	}
 )
 
@@ -42,6 +43,9 @@ func CORS(config ...CORSConfig) raptor.MiddlewareFunc {
 	}
 	if c.AllowMethods == nil {
 		c.AllowMethods = DefaultCORSConfig.AllowMethods
+	}
+	if c.ExposeHeaders == nil {
+		c.ExposeHeaders = DefaultCORSConfig.ExposeHeaders
 	}
 	return corsWithConfig(c)
 }
@@ -79,6 +83,7 @@ func corsWithConfig(config CORSConfig) raptor.MiddlewareFunc {
 
 			ctx.RequestCtx.Response.Header.Add(raptor.HeaderVary, raptor.HeaderAccessControlRequestMethod)
 			ctx.RequestCtx.Response.Header.Add(raptor.HeaderVary, raptor.HeaderAccessControlRequestHeaders)
+			ctx.RequestCtx.Response.Header.Set(raptor.HeaderAccessControlExposeHeaders, exposeHeaders)
 			ctx.RequestCtx.Response.Header.Set(raptor.HeaderAccessControlAllowMethods, allowMethods)
 
 			if allowHeaders != "" {
