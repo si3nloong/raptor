@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/erikdubbelboer/fasthttp"
 	json "github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
-	"github.com/erikdubbelboer/fasthttp"
 )
 
 // Context :
@@ -39,7 +39,7 @@ func (c *Context) Bind(dst interface{}) error {
 		return fmt.Errorf("layout is not addressable")
 	}
 
-	query := string(bytes.TrimSpace(c.QueryArgs().QueryString()))
+	query := b2s(bytes.TrimSpace(c.QueryArgs().QueryString()))
 	if query != "" {
 		values, err := url.ParseQuery(query)
 		if err != nil {
@@ -54,7 +54,8 @@ func (c *Context) Bind(dst interface{}) error {
 		return nil
 	}
 
-	switch string(c.Request.Header.Peek(HeaderContentType)) {
+	paths := bytes.Split(c.Request.Header.Peek(HeaderContentType), []byte{59})
+	switch b2s(bytes.TrimSpace(paths[0])) {
 	case MIMEApplicationForm, MIMEMultipartForm:
 		if err := form.DecodeString(&dst, string(c.Request.Body())); err != nil {
 			return err
