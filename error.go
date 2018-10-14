@@ -3,18 +3,18 @@ package raptor
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
+	"strconv"
 
-	"github.com/pquerna/ffjson/ffjson"
 	"github.com/erikdubbelboer/fasthttp"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
 type (
 	errorClaim struct {
 		Error struct {
 			Code        string      `json:"code" xml:"code"`
-			Message     interface{} `json:"message" xml:"message"`
+			Message     string      `json:"message" xml:"message"`
 			Debug       string      `json:"debug,omitempty" xml:"debug"`
 			Description interface{} `json:"description,omitempty" xml:"description"`
 		} `json:"error" xml:"error"`
@@ -73,7 +73,7 @@ func (r *Raptor) DefaultErrorHandler(ctx *Context, err error) {
 	switch ve := err.(type) {
 	case *APIError:
 		if ve.Code == "" {
-			ve.Code = fmt.Sprintf("%d", statusCode)
+			ve.Code = strconv.Itoa(statusCode)
 		}
 		if ve.Message == "" {
 			ve.Message = http.StatusText(statusCode)
@@ -81,9 +81,5 @@ func (r *Raptor) DefaultErrorHandler(ctx *Context, err error) {
 		err = ctx.Response().compileResponse(ve, statusCode)
 	default:
 		err = ctx.Response().compileResponse(ve, statusCode)
-	}
-
-	if err != nil {
-		log.Println(err)
 	}
 }

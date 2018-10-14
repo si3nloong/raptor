@@ -21,6 +21,7 @@ import (
 // Context :
 type Context struct {
 	*fasthttp.RequestCtx
+	isDebug bool
 }
 
 // ErrUnSupportedMediaType :
@@ -182,6 +183,6 @@ func (c *Context) NewAPIError(err error, params ...interface{}) error {
 	if len(params) > 2 {
 		e.Description = params[2]
 	}
-	e.isDebug = true
+	e.isDebug = c.isDebug
 	return e
 }
