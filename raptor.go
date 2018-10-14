@@ -41,12 +41,16 @@ const (
 	TRACE    = "TRACE"
 )
 
+// Logger :
+type Logger func(error)
+
 // Raptor :
 type Raptor struct {
 	router       *fasthttprouter.Router
 	middlewares  []MiddlewareFunc
 	ErrorHandler func(c *Context, err error)
-	Debug        bool
+	Logger       Logger
+	IsDebug      bool
 }
 
 // HandlerFunc :
@@ -65,6 +69,7 @@ func New() *Raptor {
 		middlewares: make([]MiddlewareFunc, 0),
 	}
 	r.ErrorHandler = r.DefaultErrorHandler
+	r.IsDebug = true
 	return r
 }
 
@@ -166,11 +171,14 @@ func (r *Raptor) DELETE(path string, handler HandlerFunc, middleware ...Middlewa
 func (r *Raptor) mergeHandler(handler HandlerFunc, middlewares ...MiddlewareFunc) fasthttp.RequestHandler {
 	return fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
 		h := handler
-		c := &Context{ctx}
+		c := &Context{RequestCtx: ctx, isDebug: r.IsDebug}
 		for i := len(middlewares) - 1; i >= 0; i-- {
 			h = middlewares[i](h)
 		}
 		if err := h(c); err != nil {
+			if r.Logger != nil {
+				r.Logger(err)
+			}
 			r.ErrorHandler(c, err)
 		}
 	})
@@ -206,7 +214,7 @@ func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 	cb := r.router.Handler
 	if len(h) > 0 {
 		cb = func(ctx *fasthttp.RequestCtx) {
-			c := &Context{ctx}
+			c := &Context{RequestCtx: ctx, isDebug: r.IsDebug}
 			if err := h[0](c); err != nil {
 				r.ErrorHandler(c, err)
 				return
