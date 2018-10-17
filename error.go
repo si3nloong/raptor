@@ -1,10 +1,10 @@
 package raptor
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/erikdubbelboer/fasthttp"
 	"github.com/pquerna/ffjson/ffjson"
@@ -44,7 +44,10 @@ func (e *APIError) MarshalJSON() (b []byte, err error) {
 }
 
 func (e *APIError) Error() string {
-	buff := new(bytes.Buffer)
+	buff := new(strings.Builder)
+	if e.Inner != nil {
+		buff.WriteString(fmt.Sprintf("debug=%s, ", e.Inner.Error()))
+	}
 	buff.WriteString(fmt.Sprintf("code=%s, message=%s", e.Code, e.Message))
 	if e.Description != nil {
 		buff.WriteString(fmt.Sprintf(", description=%v", e.Description))
