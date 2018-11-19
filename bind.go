@@ -1,6 +1,7 @@
 package raptor
 
 import (
+	"encoding"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -103,10 +104,10 @@ func loadValue(v reflect.Value, b []string) error {
 		}
 	case reflect.Struct:
 		vv := reflect.New(v.Type())
-		if err := json.Unmarshal(json.RawMessage(getString(b)), vv.Interface()); err != nil {
-			return err
+		if x, isOk := vv.Interface().(encoding.TextUnmarshaler); isOk {
+			x.UnmarshalText([]byte(getString(b)))
+			v.Set(vv.Elem())
 		}
-		v.Set(vv.Elem())
 	}
 
 	return nil
