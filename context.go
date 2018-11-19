@@ -132,8 +132,11 @@ func (c *Context) Redirect(uri string, statusCode ...int) error {
 }
 
 // Validate :
-func (c *Context) Validate(i interface{}) (*map[string]interface{}, error) {
-	return validator.Validate(i)
+func (c *Context) Validate(i interface{}) error {
+	if c.IsMethod("GET") {
+		return validator.Validate("query", i)
+	}
+	return validator.Validate("json", i)
 }
 
 // SetCookie :

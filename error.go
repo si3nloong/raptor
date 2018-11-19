@@ -8,6 +8,7 @@ import (
 
 	"github.com/erikdubbelboer/fasthttp"
 	"github.com/pquerna/ffjson/ffjson"
+	"github.com/si3nloong/raptor/validator"
 )
 
 type (
@@ -27,6 +28,7 @@ type APIError struct {
 	Code        string
 	Message     string
 	Description interface{}
+	Detail      interface{}
 	isDebug     bool
 }
 
@@ -81,6 +83,9 @@ func (r *Raptor) DefaultErrorHandler(ctx *Context, err error) {
 		if ve.Message == "" {
 			ve.Message = http.StatusText(statusCode)
 		}
+		err = ctx.Response().compileResponse(ve, statusCode)
+	case *validator.ValidationError:
+
 		err = ctx.Response().compileResponse(ve, statusCode)
 	default:
 		err = ctx.Response().compileResponse(ve, statusCode)
