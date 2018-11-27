@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erikdubbelboer/fasthttp"
+	"github.com/valyala/fasthttp"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
 )

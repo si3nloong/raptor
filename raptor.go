@@ -6,10 +6,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/erikdubbelboer/fasthttp"
-	"github.com/erikdubbelboer/fasthttp/fasthttputil"
+	"github.com/buaazp/fasthttprouter"
 	"github.com/fatih/color"
-	"github.com/thehowl/fasthttprouter"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttputil"
 )
 
 func init() {

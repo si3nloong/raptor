@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.10
 
 # Dependencies to get the git sources and go binaries
 RUN apt-get update && apt-get install -y  --no-install-recommends \
@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y  --no-install-recommends \
 # Get the git sources. If not cached, this takes O(5 minutes).
 WORKDIR /git
 RUN git config --global advice.detachedHead false
-# Linux Kernel: Released 12 Aug 2018
-RUN git clone --branch v4.18 --depth 1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux
+# Linux Kernel: Released 22 Oct 2018
+RUN git clone --branch v4.19 --depth 1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux
 # GNU C library: Released 01 Aug 2018 (we should try to get a secure way to clone this)
 RUN git clone --branch glibc-2.28 --depth 1 git://sourceware.org/git/glibc.git
 
@@ -33,7 +33,7 @@ RUN apt-get update && apt-get install -y  --no-install-recommends \
         bison gawk make python \
         gcc gcc-multilib \
         gettext texinfo \
-        qemu \
+        qemu-user \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 # Cross compilers (install recommended packages to get cross libc-dev)
@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y \
         gcc-mips-linux-gnu          gcc-mips64-linux-gnuabi64 \
         gcc-mips64el-linux-gnuabi64 gcc-mipsel-linux-gnu      \
         gcc-powerpc64-linux-gnu     gcc-powerpc64le-linux-gnu \
+	gcc-riscv64-linux-gnu                                 \
         gcc-s390x-linux-gnu         gcc-sparc64-linux-gnu     \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

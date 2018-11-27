@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/erikdubbelboer/fasthttp"
+	"github.com/valyala/fasthttp"
 	json "github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
 )
