@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/valyala/fasthttp"
 	json "github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
+	"github.com/valyala/fasthttp"
 )
 
 // Context :
@@ -184,7 +184,7 @@ func (c *Context) NewAPIError(err error, params ...interface{}) error {
 		e.Message = x
 	}
 	if len(params) > 2 {
-		e.Description = params[2]
+		e.Detail = params[2]
 	}
 	e.isDebug = c.isDebug
 	return e

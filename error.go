@@ -6,30 +6,29 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/valyala/fasthttp"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
+	"github.com/valyala/fasthttp"
 )
 
 type (
 	errorClaim struct {
 		Error struct {
-			Code        string      `json:"code" xml:"code"`
-			Message     string      `json:"message" xml:"message"`
-			Debug       string      `json:"debug,omitempty" xml:"debug"`
-			Description interface{} `json:"description,omitempty" xml:"description"`
+			Code    string      `json:"code" xml:"code"`
+			Message string      `json:"message" xml:"message"`
+			Debug   string      `json:"debug,omitempty" xml:"debug,omitempty"`
+			Detail  interface{} `json:"detail,omitempty" xml:"detail,omitempty"`
 		} `json:"error" xml:"error"`
 	}
 )
 
 // APIError :
 type APIError struct {
-	Inner       error
-	Code        string
-	Message     string
-	Description interface{}
-	Detail      interface{}
-	isDebug     bool
+	Inner   error
+	Code    string
+	Message string
+	Detail  interface{}
+	isDebug bool
 }
 
 // MarshalJSON :
@@ -40,7 +39,7 @@ func (e *APIError) MarshalJSON() (b []byte, err error) {
 	if e.isDebug && e.Inner != nil {
 		r.Error.Debug = e.Inner.Error()
 	}
-	r.Error.Description = e.Description
+	r.Error.Detail = e.Detail
 	b, err = ffjson.Marshal(r)
 	return
 }
@@ -51,8 +50,8 @@ func (e *APIError) Error() string {
 		buff.WriteString(fmt.Sprintf("debug=%s, ", e.Inner.Error()))
 	}
 	buff.WriteString(fmt.Sprintf("code=%s, message=%s", e.Code, e.Message))
-	if e.Description != nil {
-		buff.WriteString(fmt.Sprintf(", description=%v", e.Description))
+	if e.Detail != nil {
+		buff.WriteString(fmt.Sprintf(", detail=%v", e.Detail))
 	}
 	return buff.String()
 }
