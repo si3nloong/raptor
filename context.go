@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/erikdubbelboer/fasthttp"
 	json "github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
+	"github.com/valyala/fasthttp"
 )
 
 // Context :
@@ -132,8 +132,11 @@ func (c *Context) Redirect(uri string, statusCode ...int) error {
 }
 
 // Validate :
-func (c *Context) Validate(i interface{}) (*map[string]interface{}, error) {
-	return validator.Validate(i)
+func (c *Context) Validate(i interface{}) error {
+	if c.IsMethod("GET") {
+		return validator.Validate("query", i)
+	}
+	return validator.Validate("json", i)
 }
 
 // SetCookie :
@@ -181,7 +184,7 @@ func (c *Context) NewAPIError(err error, params ...interface{}) error {
 		e.Message = x
 	}
 	if len(params) > 2 {
-		e.Description = params[2]
+		e.Detail = params[2]
 	}
 	e.isDebug = c.isDebug
 	return e

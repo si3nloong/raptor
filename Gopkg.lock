@@ -9,9 +9,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/erikdubbelboer/fasthttp"
-  packages = [".","fasthttputil","stackless"]
-  revision = "49813ba5357be9434b81cee8fe2d1fa1409aeb6d"
+  name = "github.com/buaazp/fasthttprouter"
+  packages = ["."]
+  revision = "28db72dff5a1512dab256b4b7f85c5aa8c36cf73"
 
 [[projects]]
   name = "github.com/fatih/color"
@@ -34,14 +34,14 @@
 [[projects]]
   name = "github.com/klauspost/compress"
   packages = ["flate","gzip","zlib"]
-  revision = "b939724e787a27c0005cabe3f78e7ed7987ac74f"
-  version = "v1.4.0"
+  revision = "30be6041bed523c18e269a700ebd9c2ea9328574"
+  version = "v1.4.1"
 
 [[projects]]
   name = "github.com/klauspost/cpuid"
   packages = ["."]
-  revision = "ae7887de9fa5d2db4eaa8174a7eff2c1ac00f2da"
-  version = "v1.1"
+  revision = "e7e905edc00ea8827e58662220139109efea09db"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -59,35 +59,35 @@
   branch = "master"
   name = "github.com/pquerna/ffjson"
   packages = ["ffjson","fflib/v1","fflib/v1/internal"]
-  revision = "af8b230fcd2007c7095168ca8ab94c68b60840c6"
+  revision = "e517b90714f7c0eabe6d2e570a5886ae077d6db6"
 
 [[projects]]
-  name = "github.com/thehowl/fasthttprouter"
-  packages = ["."]
-  revision = "0e77ecfde28ad422d670671c17415e1d15f0f5be"
-  version = "v0.2.1"
-
-[[projects]]
-  branch = "master"
   name = "github.com/valyala/bytebufferpool"
   packages = ["."]
   revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/fasthttp"
+  packages = [".","fasthttputil","stackless"]
+  revision = "707bfb8c0e0ad28e9f1d55e02ad2691ddf41e037"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "fa5fdf94c78965f1aa8423f0cc50b8b8d728b05a"
+  revision = "62eef0e2fa9b2c385f7b2778e763486da6880d37"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v9"
   packages = ["."]
-  revision = "e69e9a28bb62b977fdc58d051f1bb477b7cbe486"
-  version = "v9.21.0"
+  revision = "1fa3c8d6336562f0a3f95c73593ee2b57ff4da11"
+  version = "v9.23.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6245015c34f73c6917194a3eed54ddfd148c4af5e8c7bb2f4cc9deb034508666"
+  inputs-digest = "652fcf4b5f89806e777f93db31be308755488eca84763e410987e3df9932a1c8"
   solver-name = "gps-cdcl"
   solver-version = 1

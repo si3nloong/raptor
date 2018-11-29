@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"reflect"
 	"strings"
@@ -9,32 +9,77 @@ import (
 	validator "gopkg.in/go-playground/validator.v9"
 )
 
-// Validate : validate fields
-func Validate(i interface{}) (*map[string]interface{}, error) {
-	var validate *validator.Validate
-	validate = validator.New()
-	registerValidation(validate)
-	registerAlias(validate)
+// ValidationError :
+type ValidationError struct {
+	errs validator.ValidationErrors
+}
 
-	err := validate.Struct(i)
+// Error :
+func (ve ValidationError) Error() string {
+	return ""
+}
 
-	if err != nil {
-
-		errs := make(map[string]interface{})
-
-		r := reflect.Indirect(reflect.ValueOf(i)).Type()
-
-		structName := r.Name()
-		for _, eachError := range err.(validator.ValidationErrors) {
-			ns := eachError.Namespace()
-			if structName != "" {
-				ns = strings.Replace(ns, fmt.Sprintf("%s.", structName), "", 1)
-			}
-			fields := strings.Split(ns, ".")[:]
-
-			diveIn(errs, r, fields, eachError)
-		}
-		return &errs, errors.New("Validation errors")
+// MarshalJSON :
+func (ve ValidationError) MarshalJSON() ([]byte, error) {
+	if len(ve.errs) == 0 {
+		return []byte(`null`), nil
 	}
-	return nil, nil
+
+	var buf bytes.Buffer
+	buf.WriteByte(123)
+
+	for _, err := range ve.errs {
+		if buf.Len() > 1 {
+			buf.WriteByte(44)
+		}
+
+		message, isExist := ValidationErrorMessages[err.Tag()]
+		if isExist && reflect.TypeOf(message).Kind() == reflect.Map {
+			// m, isOK := message.(map[string]string)[err.Kind().String()]
+			// if !isOK {
+			// 	m = ValidationErrorMessages["default"].(string)
+			// }
+			// n := strings.Replace(err.Field(), first, name, -1)
+			// m = strings.Replace(m, ":field", n, 1)
+			// m = strings.Replace(m, ":value", err.Param(), 1)
+
+			// errs[n] = m
+		} else {
+			if !isExist {
+				message = ValidationErrorMessages["default"]
+			}
+			ns := err.Namespace()
+			message = strings.Replace(message.(string), ":field", ns, 1)
+			buf.WriteByte(34)
+			buf.WriteString(ns)
+			buf.WriteByte(34)
+			buf.WriteByte(58)
+			buf.WriteString(fmt.Sprintf("%q", message))
+		}
+	}
+
+	buf.WriteByte(125)
+
+	return buf.Bytes(), nil
+}
+
+// Validate : validate fields
+func Validate(tag string, i interface{}) error {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if tag == "" {
+		tag = "json"
+	}
+	v := validator.New()
+	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get(tag), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
+
+	if errs := v.Struct(i); errs != nil {
+		return &ValidationError{errs: errs.(validator.ValidationErrors)}
+	}
+	return nil
 }

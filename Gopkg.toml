@@ -27,7 +27,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/erikdubbelboer/fasthttp"
+  name = "github.com/valyala/fasthttp"
 
 [[constraint]]
   name = "github.com/fatih/color"
@@ -38,9 +38,9 @@
   name = "github.com/pquerna/ffjson"
 
 [[constraint]]
-  name = "github.com/thehowl/fasthttprouter"
-  version = "0.2.1"
+  branch = "master"
+  name = "github.com/buaazp/fasthttprouter"
 
 [[constraint]]
   name = "gopkg.in/go-playground/validator.v9"
-  version = "9.20.2"
+  version = "9.*"
