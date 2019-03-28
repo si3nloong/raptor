@@ -3,7 +3,6 @@ package raptor
 import (
 	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/ajg/form"
 	json "github.com/pquerna/ffjson/ffjson"
@@ -32,12 +33,28 @@ func (c *Context) Response() *Response {
 	return &Response{c.RequestCtx}
 }
 
+// JSON :
+func (c *Context) JSON(value interface{}, statusCode ...int) error {
+	code := fasthttp.StatusOK
+	if len(statusCode) > 0 {
+		code = statusCode[0]
+	}
+	c.RequestCtx.Response.Header.Set(HeaderContentType, "application/json")
+	c.RequestCtx.Response.Header.SetStatusCode(code)
+	b, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	c.Write(b)
+	return nil
+}
+
 // Bind :
 func (c *Context) Bind(dst interface{}) error {
 	v := reflect.ValueOf(dst)
 	t := v.Type()
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return fmt.Errorf("layout is not addressable")
+		return errors.Errorf("layout is not addressable")
 	}
 
 	query := b2s(bytes.TrimSpace(c.QueryArgs().QueryString()))
@@ -102,10 +119,26 @@ func (c *Context) Param(key string) string {
 		str = vi
 	case bool:
 		str = fmt.Sprintf("%t", vi)
-	case int, int8, int16, int32, int64:
-		str = fmt.Sprintf("%d", vi)
-	case uint, uint8, uint16, uint32, uint64:
-		str = fmt.Sprintf("%d", vi)
+	case int:
+		str = strconv.FormatInt(int64(vi), 10)
+	case int8:
+		str = strconv.FormatInt(int64(vi), 10)
+	case int16:
+		str = strconv.FormatInt(int64(vi), 10)
+	case int32:
+		str = strconv.FormatInt(int64(vi), 10)
+	case int64:
+		str = strconv.FormatInt(int64(vi), 10)
+	case uint:
+		str = strconv.FormatUint(uint64(vi), 10)
+	case uint8:
+		str = strconv.FormatUint(uint64(vi), 10)
+	case uint16:
+		str = strconv.FormatUint(uint64(vi), 10)
+	case uint32:
+		str = strconv.FormatUint(uint64(vi), 10)
+	case uint64:
+		str = strconv.FormatUint(uint64(vi), 10)
 	case float32:
 		str = strconv.FormatFloat(float64(vi), 'f', 10, 64)
 	case float64:
@@ -168,6 +201,13 @@ func (c *Context) Render(b []byte) error {
 	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
 	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusOK)
 	c.Write(b)
+	return nil
+}
+
+// NoContent :
+func (c *Context) NoContent() error {
+	c.ResetBody()
+	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
 	return nil
 }
 

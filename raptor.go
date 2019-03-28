@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/buaazp/fasthttprouter"
 	"github.com/fatih/color"
+	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
 )
@@ -176,6 +178,7 @@ func (r *Raptor) mergeHandler(handler HandlerFunc, middlewares ...MiddlewareFunc
 			h = middlewares[i](h)
 		}
 		if err := h(c); err != nil {
+			// Wrap error with pkg/errors
 			if r.Logger != nil {
 				r.Logger(err)
 			}
@@ -226,6 +229,11 @@ func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 
 // Start :
 func (r *Raptor) Start(port string, handler ...HandlerFunc) error {
+	re := regexp.MustCompile(`^(\:)?(\d+)$`)
+	if !re.MatchString(port) {
+		return errors.Errorf("raptor: invalid port format, %q", port)
+	}
+	port = ":" + re.FindStringSubmatch(port)[2]
 	log.Println("fasthttp server started on", port)
 	return fasthttp.ListenAndServe(port, r.handler(handler...))
 }
