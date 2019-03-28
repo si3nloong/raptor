@@ -25,9 +25,6 @@ type Context struct {
 	isDebug bool
 }
 
-// ErrUnSupportedMediaType :
-var ErrUnSupportedMediaType = errors.New("Unsupported media type to bind")
-
 // Response :
 func (c *Context) Response() *Response {
 	return &Response{c.RequestCtx}
@@ -39,7 +36,7 @@ func (c *Context) JSON(value interface{}, statusCode ...int) error {
 	if len(statusCode) > 0 {
 		code = statusCode[0]
 	}
-	c.RequestCtx.Response.Header.Set(HeaderContentType, "application/json")
+	c.RequestCtx.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
 	c.RequestCtx.Response.Header.SetStatusCode(code)
 	b, err := json.Marshal(value)
 	if err != nil {
@@ -87,7 +84,7 @@ func (c *Context) Bind(dst interface{}) error {
 			return err
 		}
 	default:
-		return ErrUnSupportedMediaType
+		return errUnsupportedMediaType
 	}
 
 	return nil
@@ -150,7 +147,6 @@ func (c *Context) Param(key string) string {
 	default:
 		str = fmt.Sprintf("%v", vi)
 	}
-
 	return str
 }
 

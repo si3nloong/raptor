@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.0.0-20181023235946-059132a15dd0
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7
 	github.com/valyala/bytebufferpool v1.0.0
-	github.com/valyala/fasthttp v0.0.0-20181129100636-1d2d99cba311
+	github.com/valyala/fasthttp v1.2.0
 	golang.org/x/sys v0.0.0-20181206074257-70b957f3b65e
 	gopkg.in/go-playground/validator.v9 v9.23.0
 )

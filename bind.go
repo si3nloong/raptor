@@ -12,7 +12,7 @@ import (
 
 var (
 	errReflectIsNotPointer  = errors.New("Struct is not a pointer")
-	errUnSupportedMediaType = errors.New("Unsupported media type to bind")
+	errUnsupportedMediaType = errors.New("Unsupported media type to bind")
 )
 
 var (
