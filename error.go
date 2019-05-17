@@ -45,15 +45,15 @@ func (e *APIError) MarshalJSON() (b []byte, err error) {
 }
 
 func (e *APIError) Error() string {
-	buff := new(strings.Builder)
+	blr := new(strings.Builder)
 	if e.Inner != nil {
-		buff.WriteString(fmt.Sprintf("debug=%s, ", e.Inner.Error()))
+		blr.WriteString(fmt.Sprintf("debug=%s, ", e.Inner.Error()))
 	}
-	buff.WriteString(fmt.Sprintf("code=%s, message=%s", e.Code, e.Message))
+	blr.WriteString(fmt.Sprintf("code=%s, message=%s", e.Code, e.Message))
 	if e.Detail != nil {
-		buff.WriteString(fmt.Sprintf(", detail=%v", e.Detail))
+		blr.WriteString(fmt.Sprintf(", detail=%v", e.Detail))
 	}
-	return buff.String()
+	return blr.String()
 }
 
 // HTTPError :

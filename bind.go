@@ -3,16 +3,17 @@ package raptor
 import (
 	"encoding"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"golang.org/x/xerrors"
 )
 
 var (
-	errReflectIsNotPointer  = errors.New("Struct is not a pointer")
-	errUnsupportedMediaType = errors.New("Unsupported media type to bind")
+	errReflectIsNotPointer  = xerrors.New("Struct is not a pointer")
+	errUnsupportedMediaType = xerrors.New("Unsupported media type to bind")
 )
 
 var (
@@ -113,8 +114,18 @@ func loadValue(v reflect.Value, b []string) error {
 	return nil
 }
 
+func indirect(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			break
+		}
+		v = v.Elem()
+	}
+	return v
+}
+
 func bindQuery(tag string, v reflect.Value, l map[string][]string) error {
-	vi := reflect.Indirect(v)
+	vi := indirect(v)
 	vv := reflect.New(vi.Type())
 
 	for i := 0; i < vv.Elem().NumField(); i++ {
@@ -128,10 +139,6 @@ func bindQuery(tag string, v reflect.Value, l map[string][]string) error {
 		}
 
 		if name == "" {
-			name = ft.Name
-		}
-
-		if strings.TrimSpace(name) == "" {
 			name = ft.Name
 		}
 

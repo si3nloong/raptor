@@ -33,17 +33,6 @@ func validateRequiredIf(fl validator.FieldLevel) bool {
 	divefield := strings.Split(field, ".")
 
 	q := reflect.Indirect(fl.Top())
-	// switch v.Kind() {
-	// case reflect.Slice, reflect.Array:
-
-	// }
-	// log.Println("log:", v)
-	// log.Println("q: ", v.FieldByIndex([]int{0}).Index(0).Elem())
-
-	// log.Println("log:", v.Index(0))
-	// log.Println("debug: ", fl.Top())
-	// q := fl.Top().Elem()
-
 	for _, field := range divefield {
 		q = q.FieldByName(field)
 	}

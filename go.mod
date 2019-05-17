@@ -17,5 +17,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasthttp v1.2.0
 	golang.org/x/sys v0.0.0-20181206074257-70b957f3b65e
+	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.23.0
 )

@@ -201,9 +201,13 @@ func (c *Context) Render(b []byte) error {
 }
 
 // NoContent :
-func (c *Context) NoContent() error {
+func (c *Context) NoContent(statusCode ...int) error {
 	c.ResetBody()
-	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
+	if len(statusCode) > 0 {
+		c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
+		return nil
+	}
+	c.RequestCtx.Response.Header.SetStatusCode(statusCode[0])
 	return nil
 }
 

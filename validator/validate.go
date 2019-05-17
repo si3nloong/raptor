@@ -2,8 +2,8 @@ package validator
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	validator "gopkg.in/go-playground/validator.v9"
@@ -16,7 +16,7 @@ type ValidationError struct {
 
 // Error :
 func (ve ValidationError) Error() string {
-	return ""
+	return ve.errs.Error()
 }
 
 // MarshalJSON :
@@ -25,40 +25,28 @@ func (ve ValidationError) MarshalJSON() ([]byte, error) {
 		return []byte(`null`), nil
 	}
 
-	var buf bytes.Buffer
-	buf.WriteByte(123)
+	buf := new(bytes.Buffer)
+	buf.WriteRune('{')
 
-	for _, err := range ve.errs {
-		if buf.Len() > 1 {
-			buf.WriteByte(44)
+	for i, err := range ve.errs {
+		if i > 0 {
+			buf.WriteRune(',')
 		}
 
-		message, isExist := ValidationErrorMessages[err.Tag()]
-		if isExist && reflect.TypeOf(message).Kind() == reflect.Map {
-			// m, isOK := message.(map[string]string)[err.Kind().String()]
-			// if !isOK {
-			// 	m = ValidationErrorMessages["default"].(string)
-			// }
-			// n := strings.Replace(err.Field(), first, name, -1)
-			// m = strings.Replace(m, ":field", n, 1)
-			// m = strings.Replace(m, ":value", err.Param(), 1)
-
-			// errs[n] = m
-		} else {
-			if !isExist {
-				message = ValidationErrorMessages["default"]
-			}
-			ns := err.Namespace()
-			message = strings.Replace(message.(string), ":field", ns, 1)
-			buf.WriteByte(34)
-			buf.WriteString(ns)
-			buf.WriteByte(34)
-			buf.WriteByte(58)
-			buf.WriteString(fmt.Sprintf("%q", message))
+		msg, isOk := ValidationErrorMessages[err.Tag()]
+		if !isOk {
+			msg = ValidationErrorMessages["default"]
 		}
+
+		ns := err.Namespace()
+		msg = strings.Replace(msg, ":field", ns, 1)
+		msg = strings.Replace(msg, ":value", err.Param(), 1)
+		buf.WriteString(strconv.Quote(ns))
+		buf.WriteRune(':')
+		buf.WriteString(strconv.Quote(msg))
 	}
 
-	buf.WriteByte(125)
+	buf.WriteRune('}')
 
 	return buf.Bytes(), nil
 }
@@ -69,17 +57,16 @@ func Validate(tag string, i interface{}) error {
 	if tag == "" {
 		tag = "json"
 	}
-	v := validator.New()
-	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+	vldr := validator.New()
+	vldr.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get(tag), ",", 2)[0]
 		if name == "-" {
 			return ""
 		}
 		return name
 	})
-
-	if errs := v.Struct(i); errs != nil {
-		return &ValidationError{errs: errs.(validator.ValidationErrors)}
+	if errs := vldr.Struct(i); errs != nil {
+		return ValidationError{errs: errs.(validator.ValidationErrors)}
 	}
 	return nil
 }
