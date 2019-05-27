@@ -204,10 +204,10 @@ func (c *Context) Render(b []byte) error {
 func (c *Context) NoContent(statusCode ...int) error {
 	c.ResetBody()
 	if len(statusCode) > 0 {
-		c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
+		c.RequestCtx.Response.Header.SetStatusCode(statusCode[0])
 		return nil
 	}
-	c.RequestCtx.Response.Header.SetStatusCode(statusCode[0])
+	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
 	return nil
 }
 
