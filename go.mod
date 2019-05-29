@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.0.0-20181023235946-059132a15dd0
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7
 	github.com/valyala/bytebufferpool v1.0.0
-	github.com/valyala/fasthttp v1.2.0
+	github.com/valyala/fasthttp v1.3.0
 	golang.org/x/sys v0.0.0-20181206074257-70b957f3b65e
 	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect

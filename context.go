@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/ajg/form"
 	json "github.com/pquerna/ffjson/ffjson"
@@ -51,7 +51,7 @@ func (c *Context) Bind(dst interface{}) error {
 	v := reflect.ValueOf(dst)
 	t := v.Type()
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return errors.Errorf("layout is not addressable")
+		return xerrors.Errorf("layout is not addressable")
 	}
 
 	query := b2s(bytes.TrimSpace(c.QueryArgs().QueryString()))

@@ -68,7 +68,7 @@ func (e *HTTPError) Error() string {
 }
 
 // DefaultErrorHandler :
-func (r *Raptor) DefaultErrorHandler(ctx *Context, err error) {
+func DefaultErrorHandler(ctx *Context, err error) {
 	statusCode := ctx.RequestCtx.Response.StatusCode()
 	if statusCode <= 0 {
 		statusCode = fasthttp.StatusInternalServerError

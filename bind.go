@@ -48,7 +48,7 @@ func loadValue(v reflect.Value, b []string) error {
 			return err
 		}
 		if v.OverflowInt(x) {
-			return fmt.Errorf("overflow integer value, %v", x)
+			return xerrors.Errorf("overflow integer value, %v", x)
 		}
 		v.SetInt(x)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -66,7 +66,7 @@ func loadValue(v reflect.Value, b []string) error {
 			return err
 		}
 		if v.OverflowFloat(x) {
-			return fmt.Errorf("overflow float value , %v", x)
+			return xerrors.Errorf("overflow float value , %v", x)
 		}
 		v.SetFloat(x)
 	case reflect.Interface:

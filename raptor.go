@@ -9,9 +9,9 @@ import (
 
 	"github.com/buaazp/fasthttprouter"
 	"github.com/fatih/color"
-	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
+	"golang.org/x/xerrors"
 )
 
 func init() {
@@ -51,7 +51,6 @@ type Raptor struct {
 	router       *fasthttprouter.Router
 	middlewares  []MiddlewareFunc
 	ErrorHandler func(c *Context, err error)
-	Logger       Logger
 	IsDebug      bool
 }
 
@@ -70,7 +69,7 @@ func New() *Raptor {
 		router:      fasthttprouter.New(),
 		middlewares: make([]MiddlewareFunc, 0),
 	}
-	r.ErrorHandler = r.DefaultErrorHandler
+	r.ErrorHandler = DefaultErrorHandler
 	r.IsDebug = true
 	return r
 }
@@ -178,10 +177,6 @@ func (r *Raptor) mergeHandler(handler HandlerFunc, middlewares ...MiddlewareFunc
 			h = middlewares[i](h)
 		}
 		if err := h(c); err != nil {
-			// Wrap error with pkg/errors
-			if r.Logger != nil {
-				r.Logger(err)
-			}
 			r.ErrorHandler(c, err)
 		}
 	})
@@ -231,7 +226,7 @@ func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 func (r *Raptor) Start(port string, handler ...HandlerFunc) error {
 	re := regexp.MustCompile(`^(\:)?(\d+)$`)
 	if !re.MatchString(port) {
-		return errors.Errorf("raptor: invalid port format, %q", port)
+		return xerrors.Errorf("raptor: invalid port format, %q", port)
 	}
 	port = ":" + re.FindStringSubmatch(port)[2]
 	log.Println("fasthttp server started on", port)
