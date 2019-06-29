@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/buaazp/fasthttprouter"
+	"github.com/fasthttp/router"
 	"github.com/fatih/color"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
@@ -48,7 +48,7 @@ type Logger func(error)
 
 // Raptor :
 type Raptor struct {
-	router       *fasthttprouter.Router
+	router       *router.Router
 	middlewares  []MiddlewareFunc
 	ErrorHandler func(c *Context, err error)
 	IsDebug      bool
@@ -66,7 +66,7 @@ type Map map[string]interface{}
 // New :
 func New() *Raptor {
 	r := &Raptor{
-		router:      fasthttprouter.New(),
+		router:      router.New(),
 		middlewares: make([]MiddlewareFunc, 0),
 	}
 	r.ErrorHandler = DefaultErrorHandler
