@@ -107,8 +107,7 @@ func (c *Context) IsMethod(method string) bool {
 }
 
 // Param :
-func (c *Context) Param(key string) string {
-	var str string
+func (c *Context) Param(key string) (str string) {
 	switch vi := c.UserValue(key).(type) {
 	case []byte:
 		str = string(vi)
@@ -144,10 +143,12 @@ func (c *Context) Param(key string) string {
 		str = vi.Format(time.RFC3339)
 	case fmt.Stringer:
 		str = vi.String()
+	case nil:
+		str = ""
 	default:
 		str = fmt.Sprintf("%v", vi)
 	}
-	return str
+	return
 }
 
 // Redirect :
