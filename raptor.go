@@ -11,7 +11,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttputil"
-	"golang.org/x/xerrors"
 )
 
 func init() {
@@ -226,7 +225,7 @@ func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 func (r *Raptor) Start(port string, handler ...HandlerFunc) error {
 	re := regexp.MustCompile(`^(\:)?(\d+)$`)
 	if !re.MatchString(port) {
-		return xerrors.Errorf("raptor: invalid port format, %q", port)
+		return fmt.Errorf("raptor: invalid port format, %q", port)
 	}
 	port = ":" + re.FindStringSubmatch(port)[2]
 	log.Println("fasthttp server started on", port)

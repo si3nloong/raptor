@@ -66,7 +66,7 @@ func corsWithConfig(config CORSConfig) raptor.MiddlewareFunc {
 			}
 
 			origin := string(ctx.Request.Header.Peek(raptor.HeaderOrigin))
-			if _, isOk := allowOrigins[origin]; !isOk && !allowOrigins["*"] {
+			if _, ok := allowOrigins[origin]; !ok && !allowOrigins["*"] {
 				origin = ""
 			}
 
@@ -99,7 +99,7 @@ func corsWithConfig(config CORSConfig) raptor.MiddlewareFunc {
 				ctx.RequestCtx.Response.Header.Set(raptor.HeaderAccessControlMaxAge, fmt.Sprintf("%d", config.MaxAge))
 			}
 
-			return ctx.Response().NoContent()
+			return ctx.NoContent()
 		}
 	}
 }
