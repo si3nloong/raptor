@@ -1,12 +1,12 @@
 package raptor
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
 	"github.com/valyala/fasthttp"
 )
@@ -40,7 +40,7 @@ func (e *APIError) MarshalJSON() (b []byte, err error) {
 		r.Error.Debug = e.Inner.Error()
 	}
 	r.Error.Detail = e.Detail
-	b, err = ffjson.Marshal(r)
+	b, err = json.Marshal(r)
 	return
 }
 
@@ -69,9 +69,9 @@ func (e *HTTPError) Error() string {
 
 // DefaultErrorHandler :
 func DefaultErrorHandler(ctx *Context, err error) {
-	statusCode := ctx.RequestCtx.Response.StatusCode()
-	if statusCode <= 0 {
-		statusCode = fasthttp.StatusInternalServerError
+	statusCode := fasthttp.StatusInternalServerError
+	if ctx.RequestCtx.Response.StatusCode() >= 400 {
+		statusCode = ctx.RequestCtx.Response.StatusCode()
 	}
 
 	switch ve := err.(type) {
@@ -84,7 +84,6 @@ func DefaultErrorHandler(ctx *Context, err error) {
 		}
 		err = ctx.Response().compileResponse(ve, statusCode)
 	case *validator.ValidationError:
-
 		err = ctx.Response().compileResponse(ve, statusCode)
 	default:
 		err = ctx.Response().compileResponse(ve, statusCode)

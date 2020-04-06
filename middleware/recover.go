@@ -26,8 +26,8 @@ func recoverWithConfig(config SecureConfig) raptor.MiddlewareFunc {
 		return func(ctx *raptor.Context) error {
 			defer func() {
 				if r := recover(); r != nil {
-					err, isOk := r.(error)
-					if !isOk {
+					err, ok := r.(error)
+					if !ok {
 						err = fmt.Errorf("%v", r)
 					}
 					// stack := make([]byte, config.StackSize)

@@ -15,6 +15,7 @@ func TestBind(t *testing.T) {
 		DiscountAmount int64   `query:"discountAmount"`
 		Total          uint    `query:"total"`
 	}
+
 	v := reflect.ValueOf(&i)
 	if err := bindQuery("query", v, map[string][]string{
 		"name":           []string{"Hello World"},

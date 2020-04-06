@@ -3,7 +3,7 @@
 Inspired by Laravel and Iris
 
 Why Raptor web framework? We love fasthttp, we love speed.
-Basically Raptor is using [fasthttp](https://github.com/valyala/fasthttp), [fasthttprouter](https://github.com/buaazp/fasthttprouter), [ffjson](https://github.com/pquerna/ffjson) packages under the hood.
+Basically Raptor is using [fasthttp](https://github.com/valyala/fasthttp), [fasthttprouter](https://github.com/buaazp/fasthttprouter), [ffjson](https://encoding/json) packages under the hood.
 
 ## Installation
 
@@ -78,10 +78,10 @@ func main() {
 	  }
 
     if err := c.Bind(&i); err != nil {
-      return c.Response().BadRequest(c.NewAPIError(err))
+      return err
     }
 
-	  return c.Response().Custom(raptor.Map{"message":"hello world"})
+	  return c.JSON(raptor.Map{"message":"hello world"})
   })
   api.Start(":8080")
 ```
@@ -96,14 +96,14 @@ func main() {
     }
 
     if err := c.Bind(&i); err != nil {
-      return c.Response().BadRequest(c.NewAPIError(err))
+      return err
     }
 
     if message, err := c.Validate(&i); err != nil {
-      return c.Response().UnprocessableEntity(c.NewAPIError(err, "", message))
+      return err
     }
 
-	  return c.Response().Custom(raptor.Map{"message":"hello world"})
+	  return c.JSON(raptor.Map{"message":"hello world"})
   })
   api.Start(":8080")
 ```

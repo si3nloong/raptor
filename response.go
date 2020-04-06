@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 
 	"github.com/valyala/fasthttp"
-	"github.com/pquerna/ffjson/ffjson"
 )
 
 type (
@@ -80,7 +79,7 @@ func (r *Response) JSON(data interface{}, statusCode ...int) error {
 		r.SetStatusCode(statusCode[0])
 	}
 	r.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
-	b, err := ffjson.Marshal(data)
+	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}

@@ -11,8 +11,9 @@ import (
 	"strings"
 	"time"
 
+	json "encoding/json"
+
 	"github.com/ajg/form"
-	json "github.com/pquerna/ffjson/ffjson"
 	"github.com/si3nloong/raptor/validator"
 	"github.com/valyala/fasthttp"
 )
@@ -20,28 +21,6 @@ import (
 // Context :
 type Context struct {
 	*fasthttp.RequestCtx
-	isDebug bool
-}
-
-// Response :
-func (c *Context) Response() *Response {
-	return &Response{c.RequestCtx}
-}
-
-// JSON :
-func (c *Context) JSON(value interface{}, statusCode ...int) error {
-	code := fasthttp.StatusOK
-	if len(statusCode) > 0 {
-		code = statusCode[0]
-	}
-	c.RequestCtx.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
-	c.RequestCtx.Response.Header.SetStatusCode(code)
-	b, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	c.Write(b)
-	return nil
 }
 
 // Bind :
@@ -174,9 +153,17 @@ func (c *Context) SetCookie(cookie *http.Cookie) {
 	}
 }
 
-// HTML :
-func (c *Context) HTML(html string, statusCode ...int) error {
-	return c.HTMLBlob([]byte(html), statusCode...)
+func (c *Context) Blob(contentType string, b []byte, statusCode ...int) error {
+	httpStatusCode := fasthttp.StatusOK
+	if len(statusCode) > 0 {
+		httpStatusCode = statusCode[0]
+	}
+	c.RequestCtx.Response.Header.Set(HeaderContentType, contentType)
+	c.RequestCtx.Response.Header.SetStatusCode(httpStatusCode)
+	if _, err := c.Write(b); err != nil {
+		return err
+	}
+	return nil
 }
 
 // HTMLBlob :
@@ -191,12 +178,14 @@ func (c *Context) HTMLBlob(b []byte, statusCode ...int) error {
 	return nil
 }
 
+// HTML :
+func (c *Context) HTML(html string, statusCode ...int) error {
+	return c.HTMLBlob([]byte(html), statusCode...)
+}
+
 // Render :
 func (c *Context) Render(b []byte) error {
-	c.RequestCtx.Response.Header.Set(HeaderContentType, "text/html; charset=utf-8")
-	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusOK)
-	c.Write(b)
-	return nil
+	return c.HTMLBlob(b, fasthttp.StatusOK)
 }
 
 // NoContent :
@@ -207,6 +196,27 @@ func (c *Context) NoContent(statusCode ...int) error {
 		return nil
 	}
 	c.RequestCtx.Response.Header.SetStatusCode(fasthttp.StatusNoContent)
+	return nil
+}
+
+// Response :
+func (c *Context) Response() *Response {
+	return &Response{c.RequestCtx}
+}
+
+// JSON :
+func (c *Context) JSON(value interface{}, statusCode ...int) error {
+	code := fasthttp.StatusOK
+	if len(statusCode) > 0 {
+		code = statusCode[0]
+	}
+	c.RequestCtx.Response.Header.Set(HeaderContentType, MIMEApplicationJSON)
+	c.RequestCtx.Response.Header.SetStatusCode(code)
+	b, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	c.Write(b)
 	return nil
 }
 
@@ -225,6 +235,5 @@ func (c *Context) NewAPIError(err error, params ...interface{}) error {
 	if len(params) > 2 {
 		e.Detail = params[2]
 	}
-	e.isDebug = c.isDebug
 	return e
 }

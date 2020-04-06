@@ -171,7 +171,7 @@ func (r *Raptor) DELETE(path string, handler HandlerFunc, middleware ...Middlewa
 func (r *Raptor) mergeHandler(handler HandlerFunc, middlewares ...MiddlewareFunc) fasthttp.RequestHandler {
 	return fasthttp.RequestHandler(func(ctx *fasthttp.RequestCtx) {
 		h := handler
-		c := &Context{RequestCtx: ctx, isDebug: r.IsDebug}
+		c := &Context{RequestCtx: ctx}
 		for i := len(middlewares) - 1; i >= 0; i-- {
 			h = middlewares[i](h)
 		}
@@ -211,7 +211,7 @@ func (r *Raptor) handler(h ...HandlerFunc) fasthttp.RequestHandler {
 	cb := r.router.Handler
 	if len(h) > 0 {
 		cb = func(ctx *fasthttp.RequestCtx) {
-			c := &Context{RequestCtx: ctx, isDebug: r.IsDebug}
+			c := &Context{RequestCtx: ctx}
 			if err := h[0](c); err != nil {
 				r.ErrorHandler(c, err)
 				return
