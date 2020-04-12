@@ -1,14 +1,20 @@
 package raptor
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"errors"
+
+	"github.com/ajg/form"
+	"github.com/gorilla/schema"
 )
 
 var (
@@ -19,6 +25,52 @@ var (
 var (
 	typeOfByte = reflect.TypeOf([]byte(nil))
 )
+
+// Bind :
+func (c *Context) Bind(dst interface{}) error {
+	v := reflect.ValueOf(dst)
+	t := v.Type()
+	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("layout is not addressable")
+	}
+
+	c.QueryArgs().QueryString()
+	query := b2s(bytes.TrimSpace(c.QueryArgs().QueryString()))
+	if query != "" {
+		values, err := url.ParseQuery(query)
+		if err != nil {
+			return err
+		}
+
+		dec := schema.NewDecoder()
+		dec.SetAliasTag("query")
+		if err := dec.Decode(dst, values); err != nil {
+			return err
+		}
+	}
+
+	if c.IsMethod(GET) {
+		return nil
+	}
+
+	paths := bytes.Split(c.Request.Header.Peek(HeaderContentType), []byte{59})
+	switch b2s(bytes.TrimSpace(paths[0])) {
+	case MIMEApplicationForm, MIMEMultipartForm:
+		if err := form.DecodeString(&dst, string(c.Request.Body())); err != nil {
+			return err
+		}
+	case MIMEApplicationXML:
+		if err := xml.Unmarshal(c.Request.Body(), dst); err != nil {
+			return err
+		}
+	default:
+		if err := json.Unmarshal(c.Request.Body(), dst); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func getString(s []string) string {
 	if len(s) > 0 {

@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
-	"strings"
 
 	"github.com/fasthttp/router"
 	"github.com/fatih/color"
@@ -88,24 +87,11 @@ func (r *Raptor) Use(middleware ...MiddlewareFunc) {
 
 // Static :
 func (r *Raptor) Static(prefix, path string) *Raptor {
-	switch {
-	case prefix[len(prefix)-1:] == "/":
-		prefix = fmt.Sprintf("%s*filepath", prefix)
+	fileHandler := fasthttp.FSHandler(path, 0)
 
-	default:
-		prefix = fmt.Sprintf("%s/*filepath", prefix)
-	}
-
-	switch false {
-	case !strings.HasPrefix(path, "./"):
-		path = fmt.Sprintf("./%s", path)
-
-	case !strings.HasPrefix(path, "/"):
-		path = fmt.Sprintf(".%s", path)
-	}
-
-	r.router.ServeFiles(prefix, path)
-
+	r.router.GET(prefix, func(ctx *fasthttp.RequestCtx) {
+		fileHandler(ctx)
+	})
 	return r
 }
 

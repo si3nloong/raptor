@@ -2,18 +2,14 @@ package raptor
 
 import (
 	"bytes"
-	"encoding/xml"
 	"fmt"
 	"net/http"
-	"net/url"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	json "encoding/json"
 
-	"github.com/ajg/form"
 	"github.com/si3nloong/raptor/validator"
 	"github.com/valyala/fasthttp"
 )
@@ -21,50 +17,6 @@ import (
 // Context :
 type Context struct {
 	*fasthttp.RequestCtx
-}
-
-// Bind :
-func (c *Context) Bind(dst interface{}) error {
-	v := reflect.ValueOf(dst)
-	t := v.Type()
-	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return fmt.Errorf("layout is not addressable")
-	}
-
-	query := b2s(bytes.TrimSpace(c.QueryArgs().QueryString()))
-	if query != "" {
-		values, err := url.ParseQuery(query)
-		if err != nil {
-			return err
-		}
-		if err := bindQuery("query", v, values); err != nil {
-			return err
-		}
-	}
-
-	if c.IsMethod(GET) {
-		return nil
-	}
-
-	paths := bytes.Split(c.Request.Header.Peek(HeaderContentType), []byte{59})
-	switch b2s(bytes.TrimSpace(paths[0])) {
-	case MIMEApplicationForm, MIMEMultipartForm:
-		if err := form.DecodeString(&dst, string(c.Request.Body())); err != nil {
-			return err
-		}
-	case MIMEApplicationXML:
-		if err := xml.Unmarshal(c.Request.Body(), dst); err != nil {
-			return err
-		}
-	case MIMEApplicationJSON:
-		if err := json.Unmarshal(c.Request.Body(), dst); err != nil {
-			return err
-		}
-	default:
-		return errUnsupportedMediaType
-	}
-
-	return nil
 }
 
 // QueryString :
@@ -113,7 +65,7 @@ func (c *Context) Param(key string) (str string) {
 	case uint64:
 		str = strconv.FormatUint(uint64(vi), 10)
 	case float32:
-		str = strconv.FormatFloat(float64(vi), 'f', 10, 64)
+		str = strconv.FormatFloat(float64(vi), 'f', 10, 32)
 	case float64:
 		str = strconv.FormatFloat(vi, 'f', 10, 64)
 	case time.Time:
