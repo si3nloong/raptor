@@ -33,8 +33,8 @@ func (ve ValidationError) MarshalJSON() ([]byte, error) {
 			buf.WriteRune(',')
 		}
 
-		msg, isOk := ValidationErrorMessages[err.Tag()]
-		if !isOk {
+		msg, ok := ValidationErrorMessages[err.Tag()]
+		if !ok {
 			msg = ValidationErrorMessages["default"]
 		}
 
@@ -65,8 +65,11 @@ func Validate(tag string, i interface{}) error {
 		}
 		return name
 	})
-	if errs := vldr.Struct(i); errs != nil {
-		return ValidationError{errs: errs.(validator.ValidationErrors)}
+	if err := vldr.RegisterValidation("required_if", validateRequiredIf); err != nil {
+		panic(err)
+	}
+	if err := vldr.Struct(i); err != nil {
+		return ValidationError{errs: err.(validator.ValidationErrors)}
 	}
 	return nil
 }

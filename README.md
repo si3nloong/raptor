@@ -25,7 +25,7 @@ import (
 func main() {
   r := raptor.New()
   r.GET("/", func(c *raptor.Context) error {
-    return c.Response().Custom(raptor.Map{"message":"hello world"})
+    return c.JSON(raptor.Map{"message":"hello world"})
   })
   r.Start(":8080")
 }
@@ -46,18 +46,18 @@ func (hs host) Routing(ctx *raptor.Context) error {
     cb = middleware.CORS(corsConfig)(cb)
     return cb(ctx)
   }
-  return ctx.Response().NotFound(fmt.Errorf("page not found"))
+  return ctx.JSON(fmt.Errorf("page not found"), fasthttp.StatusNotFound)
 }
 
 func main() {
   api := raptor.New()
   api.GET("/", func(c *raptor.Context) error {
-    return c.Response().Custom(raptor.Map{"message":"hello world"})
+    return c.JSON(raptor.Map{"message":"hello world"})
   })
 
   open := raptor.New()
   open.GET("/", func(c *raptor.Context) error {
-    return c.Response().Custom(raptor.Map{"message":"hello world"})
+    return c.JSON(raptor.Map{"message":"hello world"})
   })
 
   hosts["api.domain.com"] = api.Handler()

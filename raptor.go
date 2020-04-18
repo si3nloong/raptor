@@ -63,10 +63,9 @@ type Map map[string]interface{}
 
 // New :
 func New() *Raptor {
-	r := &Raptor{
-		router:      router.New(),
-		middlewares: make([]MiddlewareFunc, 0),
-	}
+	r := new(Raptor)
+	r.router = router.New()
+	r.middlewares = make([]MiddlewareFunc, 0)
 	r.ErrorHandler = DefaultErrorHandler
 	r.IsDebug = true
 	return r

@@ -1,13 +1,17 @@
 package raptor
 
 import (
-	"fmt"
-	"log"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBind(t *testing.T) {
+	var (
+		err error
+	)
+
 	var i struct {
 		Name           []byte  `query:"name"`
 		Signature      string  `query:"signature"`
@@ -17,33 +21,18 @@ func TestBind(t *testing.T) {
 	}
 
 	v := reflect.ValueOf(&i)
-	if err := bindQuery("query", v, map[string][]string{
-		"name":           []string{"Hello World"},
-		"signature":      []string{"D86029B21A0DF5E4AFBA48D0FB9861393B278AAC"},
-		"amount":         []string{"19.85"},
-		"discountAmount": []string{"-105"},
-		"total":          []string{"100"},
-	}); err != nil {
-		log.Fatal(err)
-	}
+	err = bindQuery("query", v, map[string][]string{
+		"name":           {"Hello World"},
+		"signature":      {"D86029B21A0DF5E4AFBA48D0FB9861393B278AAC"},
+		"amount":         {"19.85"},
+		"discountAmount": {"-105"},
+		"total":          {"100"},
+	})
 
-	if string(i.Name) != "Hello World" {
-		log.Fatal(fmt.Errorf("Unexpected bind value %s", i.Name))
-	}
-
-	if i.Signature != "D86029B21A0DF5E4AFBA48D0FB9861393B278AAC" {
-		log.Fatal(fmt.Errorf("Unexpected bind value %v", i.Signature))
-	}
-
-	if i.Amount != 19.85 {
-		log.Fatal(fmt.Errorf("Unexpected bind value %v", i.Amount))
-	}
-
-	if i.DiscountAmount != -105 {
-		log.Fatal(fmt.Errorf("Unexpected bind value %v", i.DiscountAmount))
-	}
-
-	if i.Total != 100 {
-		log.Fatal(fmt.Errorf("Unexpected bind value %v", i.Total))
-	}
+	require.NoError(t, err)
+	require.Equal(t, "Hello World", string(i.Name))
+	require.Equal(t, "D86029B21A0DF5E4AFBA48D0FB9861393B278AAC", i.Signature)
+	require.Equal(t, float64(19.85), i.Amount)
+	require.Equal(t, int64(-105), i.DiscountAmount)
+	require.Equal(t, uint(100), i.Total)
 }

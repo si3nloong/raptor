@@ -8,5 +8,6 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/go-playground/validator/v10 v10.2.0
 	github.com/gorilla/schema v1.1.0
-	github.com/valyala/fasthttp v1.9.1-0.20200407073505-402e095d4da6
+	github.com/stretchr/testify v1.4.0
+	github.com/valyala/fasthttp v1.10.0
 )
