@@ -9,7 +9,11 @@ import (
 	validator "github.com/go-playground/validator/v10"
 )
 
-func validateRequiredIf(fl validator.FieldLevel) bool {
+type Validator struct {
+	*validator.Validate
+}
+
+func (v *Validator) validateRequiredIf(fl validator.FieldLevel) bool {
 	param := fl.Param()
 	paths := strings.SplitN(param, " ", 3)
 	if len(paths) != 3 {
@@ -21,33 +25,43 @@ func validateRequiredIf(fl validator.FieldLevel) bool {
 	}
 
 	// v, k, nullable, found := fl.GetStructFieldOKAdvanced2(fl.Top(), paths[0])
-	v, k, _, found := fl.GetStructFieldOKAdvanced2(fl.Top(), paths[0])
+	val, k, _, found := fl.GetStructFieldOKAdvanced2(fl.Top(), paths[0])
 	if !found {
 		panic(fmt.Sprintf("invalid parent field name %s for field %s", paths[0], fl.FieldName()))
 	}
 
+	var valid bool
 	switch paths[1] {
 	case "eq":
-		return validateEqual(v, k, paths)
+		valid = validateEqual(val, k, paths)
 
 	case "ne":
-		return validateNotEqual(v, k, paths)
+		valid = validateNotEqual(val, k, paths)
 
 	case "gt":
-		return validateGreaterThan(v, k, paths)
+		valid = validateGreaterThan(val, k, paths)
 
 	case "gte":
-		return validateGreaterThanOrEqual(v, k, paths)
+		valid = validateGreaterThanOrEqual(val, k, paths)
 
 	case "lt":
-		return validateLesserThan(v, k, paths)
+		valid = validateLesserThan(val, k, paths)
 
 	case "lte":
-		return validateLesserThanOrEqual(v, k, paths)
+		valid = validateLesserThanOrEqual(val, k, paths)
 
 	default:
 		panic(fmt.Sprintf("unsupported operator %s", paths[1]))
 	}
+
+	if !valid {
+		return true
+	}
+
+	if err := v.Var(fl.Field().Interface(), "required"); err != nil {
+		return false
+	}
+	return true
 }
 
 func validateEqual(v reflect.Value, k reflect.Kind, paths []string) bool {

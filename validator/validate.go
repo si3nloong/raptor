@@ -65,7 +65,9 @@ func Validate(tag string, i interface{}) error {
 		}
 		return name
 	})
-	if err := vldr.RegisterValidation("required_if", validateRequiredIf); err != nil {
+	v := new(Validator)
+	v.Validate = vldr
+	if err := vldr.RegisterValidation("required_if", v.validateRequiredIf); err != nil {
 		panic(err)
 	}
 	if err := vldr.Struct(i); err != nil {
